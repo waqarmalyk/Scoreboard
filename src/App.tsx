@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 
-type BallType = '0' | '1' | '2' | '3' | '4' | '6' | 'W' | 'WD' | 'NB';
+type BallType = '0' | '1' | '2' | '3' | '4' | '5' | '6' | 'W' | 'WD' | 'NB';
 
 interface Ball {
   type: BallType;
@@ -477,31 +477,84 @@ function App() {
 
           <div className='teams-section'>
             <div className='team-input'>
-              <label>Batting Team:</label>
-              <input
-                type='text'
-                value={innings === 1 ? team1Name : team2Name}
-                onChange={(e) =>
-                  innings === 1
-                    ? setTeam1Name(e.target.value)
-                    : setTeam2Name(e.target.value)
-                }
-                placeholder='Team Name'
-              />
+              <div className='team-icon'>🏏</div>
+              <div className='team-info'>
+                <label> Team 1</label>
+                <input
+                  type='text'
+                  value={innings === 1 ? team1Name : team2Name}
+                  onChange={(e) =>
+                    innings === 1
+                      ? setTeam1Name(e.target.value)
+                      : setTeam2Name(e.target.value)
+                  }
+                  placeholder='Team Name'
+                />
+              </div>
             </div>
             <div className='team-input'>
-              <label>Bowling Team:</label>
-              <input
-                type='text'
-                value={innings === 1 ? team2Name : team1Name}
-                onChange={(e) =>
-                  innings === 1
-                    ? setTeam2Name(e.target.value)
-                    : setTeam1Name(e.target.value)
-                }
-                placeholder='Team Name'
-              />
+              <div className='team-icon'>⚾</div>
+              <div className='team-info'>
+                <label> Team 2</label>
+                <input
+                  type='text'
+                  value={innings === 1 ? team2Name : team1Name}
+                  onChange={(e) =>
+                    innings === 1
+                      ? setTeam2Name(e.target.value)
+                      : setTeam1Name(e.target.value)
+                  }
+                  placeholder='Team Name'
+                />
+              </div>
             </div>
+          </div>
+
+          <div className='score-display'>
+            <div className='score-innings-row'>
+              <div className='main-score'>
+                <span className='runs'>{totalRuns}</span>
+                <span className='wickets'>/{wickets}</span>
+              </div>
+              <div className='innings-indicator'>
+                {innings === 1 ? '1st Innings' : '2nd Innings'}
+              </div>
+            </div>
+            <div className='overs'>
+              <span className='overs-label'>Overs:</span>
+              <span className='overs-value'>{oversDisplay}</span>
+            </div>
+            {targetMode && (
+              <div className='target-info'>
+                <div className='target-item'>
+                  <span className='target-label'>Target:</span>
+                  <span className='target-value'>{target}</span>
+                </div>
+                <div className='target-item'>
+                  <span className='target-label'>Need:</span>
+                  <span className='target-value'>
+                    {runsRequired > 0 ? runsRequired : 0} runs
+                  </span>
+                </div>
+                <div className='target-item'>
+                  <span className='target-label'>Balls Left:</span>
+                  <span className='target-value'>{ballsRemaining}</span>
+                </div>
+                <div className='target-item'>
+                  <span className='target-label'>CRR:</span>
+                  <span className='target-value'>{runRate}</span>
+                </div>
+                <div className='target-item'>
+                  <span className='target-label'>RRR:</span>
+                  <span className='target-value'>{requiredRunRate}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className='extras-display'>
+            <div className='extra-item'>Wides: {extras.wides}</div>
+            <div className='extra-item'>No Balls: {extras.noBalls}</div>
           </div>
 
           <div className='players-section'>
@@ -564,53 +617,6 @@ function App() {
             </div>
           </div>
 
-          <div className='score-display'>
-            <div className='score-innings-row'>
-              <div className='main-score'>
-                <span className='runs'>{totalRuns}</span>
-                <span className='wickets'>/{wickets}</span>
-              </div>
-              <div className='innings-indicator'>
-                {innings === 1 ? '1st Innings' : '2nd Innings'}
-              </div>
-            </div>
-            <div className='overs'>
-              <span className='overs-label'>Overs:</span>
-              <span className='overs-value'>{oversDisplay}</span>
-            </div>
-            {targetMode && (
-              <div className='target-info'>
-                <div className='target-item'>
-                  <span className='target-label'>Target:</span>
-                  <span className='target-value'>{target}</span>
-                </div>
-                <div className='target-item'>
-                  <span className='target-label'>Need:</span>
-                  <span className='target-value'>
-                    {runsRequired > 0 ? runsRequired : 0} runs
-                  </span>
-                </div>
-                <div className='target-item'>
-                  <span className='target-label'>Balls Left:</span>
-                  <span className='target-value'>{ballsRemaining}</span>
-                </div>
-                <div className='target-item'>
-                  <span className='target-label'>CRR:</span>
-                  <span className='target-value'>{runRate}</span>
-                </div>
-                <div className='target-item'>
-                  <span className='target-label'>RRR:</span>
-                  <span className='target-value'>{requiredRunRate}</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className='extras-display'>
-            <div className='extra-item'>Wides: {extras.wides}</div>
-            <div className='extra-item'>No Balls: {extras.noBalls}</div>
-          </div>
-
           <div className='current-over'>
             <h3>Current Over</h3>
             <div className='balls-container'>
@@ -638,55 +644,71 @@ function App() {
             <h3>Ball Types</h3>
             <div className='button-grid'>
               <button className='btn btn-dot' onClick={() => addBall('0', 0)}>
-                Dot Ball
+                <div>0</div>
+                <small>dot</small>
               </button>
               <button className='btn btn-run' onClick={() => addBall('1', 1)}>
-                1 Run
+                <div>1</div>
+                <small>run</small>
               </button>
               <button className='btn btn-run' onClick={() => addBall('2', 2)}>
-                2 Runs
+                <div>2</div>
+                <small>runs</small>
               </button>
               <button className='btn btn-run' onClick={() => addBall('3', 3)}>
-                3 Runs
+                <div>3</div>
+                <small>runs</small>
+              </button>
+              <button className='btn btn-run' onClick={() => addBall('5', 5)}>
+                <div>5</div>
+                <small>runs</small>
               </button>
               <button className='btn btn-four' onClick={() => addBall('4', 4)}>
-                4️⃣ FOUR
+                <div>4</div>
+                <small>runs</small>
               </button>
               <button className='btn btn-six' onClick={() => addBall('6', 6)}>
-                6️⃣ SIX
+                <div>6</div>
+                <small>runs</small>
               </button>
               <button className='btn btn-wicket' onClick={addWicket}>
-                🎯 Wicket
+                <div>W</div>
+                <small>wicket</small>
               </button>
               <button
                 className='btn btn-extra'
                 onClick={() => addBall('WD', 1)}
               >
-                Wide (1)
+                <div>WD</div>
+                <small>wide</small>
               </button>
               <button
                 className='btn btn-extra'
                 onClick={() => addBall('WD', 5)}
               >
-                Wide + 4
+                <div>WD4</div>
+                <small>wide</small>
               </button>
               <button
                 className='btn btn-extra'
                 onClick={() => addBall('NB', 1)}
               >
-                No Ball (1)
+                <div>NB</div>
+                <small>no ball</small>
               </button>
               <button
                 className='btn btn-extra'
                 onClick={() => addBall('NB', 5)}
               >
-                NB + 4
+                <div>NB4</div>
+                <small>no ball</small>
               </button>
               <button
                 className='btn btn-extra'
                 onClick={() => addBall('NB', 7)}
               >
-                NB + 6
+                <div>NB6</div>
+                <small>no ball</small>
               </button>
             </div>
           </div>
@@ -732,7 +754,13 @@ function App() {
                             ball.type === 'W' ? 'wicket' : ''
                           } 
                           ${ball.type === '4' ? 'four' : ''} 
-                          ${ball.type === '6' ? 'six' : ''}`}
+                          ${ball.type === '6' ? 'six' : ''}
+                          ${
+                            ball.type === 'WD' || ball.type === 'NB'
+                              ? 'extra'
+                              : ''
+                          }
+                          ${ball.type === '0' ? 'dot' : ''}`}
                         >
                           {getBallDisplay(ball)}
                         </span>
