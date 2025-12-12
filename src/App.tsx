@@ -885,6 +885,10 @@ function App() {
               )}
             </div>
           )}
+
+          <div className='footer'>
+            <p>Made with love by Ahmed Waqar 🖤</p>
+          </div>
         </div>
       </div>
     </div>

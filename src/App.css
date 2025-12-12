@@ -7,7 +7,10 @@
 body,
 html {
   height: 100%;
-  overflow: hidden;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  position: fixed;
+  width: 100%;
 }
 
 .app-container {
@@ -17,7 +20,8 @@ html {
   justify-content: center;
   align-items: center;
   background: #f0f2f5;
-  overflow-y: auto;
+  overflow: hidden;
+  position: relative;
 }
 
 .app {
@@ -28,6 +32,7 @@ html {
   align-items: center;
   padding: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
 }
 
 .scoreboard {
@@ -35,6 +40,8 @@ html {
   width: 100%;
   background: white;
   overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
 }
@@ -63,6 +70,22 @@ html {
   margin: 0;
   opacity: 0.9;
   letter-spacing: 1px;
+}
+
+.footer {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  text-align: center;
+  margin-top: auto;
+}
+
+.footer p {
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+  opacity: 0.95;
+  letter-spacing: 0.5px;
 }
 
 .score-display {
