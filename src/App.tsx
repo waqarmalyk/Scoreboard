@@ -531,7 +531,7 @@ function App() {
           🎨
         </button>
         {showColorPicker && (
-          <div className='absolute right-16 top-0 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl p-4 border border-white/40 min-w-[200px]'>
+          <div className='absolute right-16 top-1/2 -translate-y-1/2 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl p-4 border border-white/40 min-w-[200px] max-h-[70vh] overflow-y-auto'>
             <h3 className='text-gray-800 font-bold mb-3 text-sm'>
               Choose Theme
             </h3>
