@@ -2,6 +2,16 @@ import { useState, useEffect } from 'react';
 import './App.css';
 
 type BallType = '0' | '1' | '2' | '3' | '4' | '5' | '6' | 'W' | 'WD' | 'NB';
+type ThemeColor =
+  | 'purple'
+  | 'teal'
+  | 'emerald'
+  | 'rose'
+  | 'blue'
+  | 'orange'
+  | 'pink'
+  | 'black'
+  | 'white';
 
 interface Ball {
   type: BallType;
@@ -27,6 +37,12 @@ interface BowlerStats {
 }
 
 function App() {
+  // Theme state
+  const [theme, setTheme] = useState<ThemeColor>(
+    () => (localStorage.getItem('theme') as ThemeColor) || 'black'
+  );
+  const [showColorPicker, setShowColorPicker] = useState(false);
+
   // Load from localStorage or use defaults
   const [team1Name, setTeam1Name] = useState(
     () => localStorage.getItem('team1Name') || 'Team 1'
@@ -76,7 +92,40 @@ function App() {
     localStorage.setItem('team2Name', team2Name);
     localStorage.setItem('batsmenStats', JSON.stringify(batsmenStats));
     localStorage.setItem('bowlerStats', JSON.stringify(bowlerStats));
-  }, [team1Name, team2Name, batsmenStats, bowlerStats]);
+    localStorage.setItem('theme', theme);
+  }, [team1Name, team2Name, batsmenStats, bowlerStats, theme]);
+
+  const changeTheme = (newTheme: ThemeColor) => {
+    setTheme(newTheme);
+    setShowColorPicker(false);
+  };
+
+  // Get background gradient based on theme
+  const getThemeBg = () => {
+    const gradients: Record<ThemeColor, string> = {
+      purple: 'from-purple-600 via-violet-600 to-purple-700',
+      teal: 'from-teal-400 via-cyan-500 to-blue-500',
+      emerald: 'from-emerald-500 via-green-600 to-teal-600',
+      rose: 'from-rose-500 via-pink-600 to-red-600',
+      blue: 'from-blue-600 via-indigo-600 to-purple-700',
+      orange: 'from-orange-500 via-amber-600 to-yellow-500',
+      pink: 'from-pink-500 via-fuchsia-600 to-purple-600',
+      black: 'from-gray-900 via-gray-800 to-black',
+      white: 'from-gray-100 via-gray-50 to-white',
+    };
+    return gradients[theme];
+  };
+
+  const getTextColor = () =>
+    theme === 'white' ? 'text-gray-900' : 'text-white';
+  const getTextColorLight = () =>
+    theme === 'white' ? 'text-gray-700' : 'text-white/80';
+  const getPlaceholderColor = () =>
+    theme === 'white' ? 'placeholder-gray-400' : 'placeholder-white/50';
+  const getGlassColor = () =>
+    theme === 'white' ? 'bg-gray-900/10' : 'bg-white/10';
+  const getBorderColor = () =>
+    theme === 'white' ? 'border-gray-900/20' : 'border-white/20';
 
   const updateBatsmanStats = (
     runs: number,
@@ -467,19 +516,116 @@ function App() {
   const oversDisplay = `${totalOvers}.${currentOverNumber}`;
 
   return (
-    <div className='app-container'>
-      <div className='app'>
-        <div className='scoreboard'>
-          <div className='header'>
-            <h1>🏏 Flateby Cricket</h1>
-            <p className='sub-heading'>Scoreboard</p>
+    <div
+      className={`min-h-screen bg-gradient-to-br ${getThemeBg()} flex items-center justify-center p-4`}
+    >
+      {/* Floating Color Picker */}
+      <div className='fixed right-4 top-1/2 -translate-y-1/2 z-50'>
+        <button
+          onClick={() => setShowColorPicker(!showColorPicker)}
+          className={`${getGlassColor()} backdrop-blur-md ${getTextColor()} rounded-full w-14 h-14 flex items-center justify-center shadow-2xl border-2 ${getBorderColor()} ${
+            theme === 'white' ? 'hover:bg-gray-900/20' : 'hover:bg-white/30'
+          } transition-all duration-300 hover:scale-110 text-2xl`}
+          title='Change Theme'
+        >
+          🎨
+        </button>
+        {showColorPicker && (
+          <div className='absolute right-16 top-0 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl p-4 border border-white/40 min-w-[200px]'>
+            <h3 className='text-gray-800 font-bold mb-3 text-sm'>
+              Choose Theme
+            </h3>
+            <div className='flex flex-col gap-2'>
+              {[
+                {
+                  name: 'Purple',
+                  value: 'purple' as ThemeColor,
+                  gradient: 'from-purple-600 via-violet-600 to-purple-700',
+                },
+                {
+                  name: 'Teal',
+                  value: 'teal' as ThemeColor,
+                  gradient: 'from-teal-400 via-cyan-500 to-blue-500',
+                },
+                {
+                  name: 'Emerald',
+                  value: 'emerald' as ThemeColor,
+                  gradient: 'from-emerald-500 via-green-600 to-teal-600',
+                },
+                {
+                  name: 'Rose',
+                  value: 'rose' as ThemeColor,
+                  gradient: 'from-rose-500 via-pink-600 to-red-600',
+                },
+                {
+                  name: 'Blue',
+                  value: 'blue' as ThemeColor,
+                  gradient: 'from-blue-600 via-indigo-600 to-purple-700',
+                },
+                {
+                  name: 'Orange',
+                  value: 'orange' as ThemeColor,
+                  gradient: 'from-orange-500 via-amber-600 to-yellow-500',
+                },
+                {
+                  name: 'Pink',
+                  value: 'pink' as ThemeColor,
+                  gradient: 'from-pink-500 via-fuchsia-600 to-purple-600',
+                },
+                {
+                  name: 'Black',
+                  value: 'black' as ThemeColor,
+                  gradient: 'from-gray-900 via-gray-800 to-black',
+                },
+                {
+                  name: 'White',
+                  value: 'white' as ThemeColor,
+                  gradient: 'from-gray-100 via-gray-50 to-white',
+                },
+              ].map((color) => (
+                <button
+                  key={color.value}
+                  onClick={() => changeTheme(color.value)}
+                  className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ${
+                    theme === color.value
+                      ? 'bg-gradient-to-r ' + color.gradient + ' text-white'
+                      : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                  }`}
+                >
+                  <div
+                    className={`w-6 h-6 rounded-full bg-gradient-to-br ${color.gradient}`}
+                  ></div>
+                  <span className='font-semibold text-sm'>{color.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className='w-full max-w-6xl'>
+        <div
+          className={`${getGlassColor()} backdrop-blur-xl rounded-3xl border ${getBorderColor()} shadow-2xl p-6 md:p-8`}
+        >
+          <div className='text-center mb-8'>
+            <h1
+              className={`text-4xl md:text-5xl font-bold ${getTextColor()} mb-2`}
+            >
+              🏏 Flateby Cricket
+            </h1>
+            <p className={`text-xl ${getTextColorLight()}`}>Scoreboard</p>
           </div>
 
-          <div className='teams-section'>
-            <div className='team-input'>
-              <div className='team-icon'>🏏</div>
-              <div className='team-info'>
-                <label> Team 1</label>
+          <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
+            <div
+              className={`${getGlassColor()} backdrop-blur-md rounded-xl border ${getBorderColor()} p-4 flex items-center gap-3`}
+            >
+              <div className='text-3xl'>🏏</div>
+              <div className='flex-1'>
+                <label className={`${getTextColorLight()} text-sm block mb-1`}>
+                  {' '}
+                  Team 1
+                </label>
                 <input
                   type='text'
                   value={innings === 1 ? team1Name : team2Name}
@@ -489,13 +635,19 @@ function App() {
                       : setTeam2Name(e.target.value)
                   }
                   placeholder='Team Name'
+                  className={`w-full ${getGlassColor()} border ${getBorderColor()} rounded-lg px-3 py-2 ${getTextColor()} ${getPlaceholderColor()} focus:outline-none focus:ring-2 focus:ring-purple-300/50`}
                 />
               </div>
             </div>
-            <div className='team-input'>
-              <div className='team-icon'>⚾</div>
-              <div className='team-info'>
-                <label> Team 2</label>
+            <div
+              className={`${getGlassColor()} backdrop-blur-md rounded-xl border ${getBorderColor()} p-4 flex items-center gap-3`}
+            >
+              <div className='text-3xl'>⚾</div>
+              <div className='flex-1'>
+                <label className={`${getTextColorLight()} text-sm block mb-1`}>
+                  {' '}
+                  Team 2
+                </label>
                 <input
                   type='text'
                   value={innings === 1 ? team2Name : team1Name}
@@ -505,67 +657,120 @@ function App() {
                       : setTeam1Name(e.target.value)
                   }
                   placeholder='Team Name'
+                  className={`w-full ${getGlassColor()} border ${getBorderColor()} rounded-lg px-3 py-2 ${getTextColor()} ${getPlaceholderColor()} focus:outline-none focus:ring-2 focus:ring-purple-300/50`}
                 />
               </div>
             </div>
           </div>
 
-          <div className='score-display'>
-            <div className='score-innings-row'>
-              <div className='main-score'>
-                <span className='runs'>{totalRuns}</span>
-                <span className='wickets'>/{wickets}</span>
+          <div
+            className={`${getGlassColor()} backdrop-blur-md rounded-xl border ${getBorderColor()} p-6 mb-6`}
+          >
+            <div className='flex items-center justify-between mb-4'>
+              <div className='flex items-end gap-2'>
+                <span
+                  className={`text-6xl md:text-7xl font-bold ${getTextColor()}`}
+                >
+                  {totalRuns}
+                </span>
+                <span
+                  className={`text-4xl md:text-5xl font-bold ${
+                    theme === 'white' ? 'text-gray-600' : 'text-white/70'
+                  }`}
+                >
+                  /{wickets}
+                </span>
               </div>
-              <div className='innings-indicator'>
-                {innings === 1 ? '1st Innings' : '2nd Innings'}
+              <div className='bg-purple-500/40 backdrop-blur-md border border-purple-300/50 rounded-lg px-4 py-2'>
+                <span className={`${getTextColor()} font-semibold`}>
+                  {innings === 1 ? '1st Innings' : '2nd Innings'}
+                </span>
               </div>
             </div>
-            <div className='overs'>
-              <span className='overs-label'>Overs:</span>
-              <span className='overs-value'>{oversDisplay}</span>
+            <div className={`flex items-center gap-2 ${getTextColor()} mb-4`}>
+              <span className={getTextColorLight()}>Overs:</span>
+              <span className='text-2xl font-semibold'>{oversDisplay}</span>
             </div>
             {targetMode && (
-              <div className='target-info'>
-                <div className='target-item'>
-                  <span className='target-label'>Target:</span>
-                  <span className='target-value'>{target}</span>
+              <div className='grid grid-cols-2 md:grid-cols-5 gap-3'>
+                <div
+                  className={`${getGlassColor()} rounded-lg p-3 border ${getBorderColor()}`}
+                >
+                  <span className={`${getTextColorLight()} text-sm block mb-1`}>
+                    Target:
+                  </span>
+                  <span className={`${getTextColor()} font-bold text-lg`}>
+                    {target}
+                  </span>
                 </div>
-                <div className='target-item'>
-                  <span className='target-label'>Need:</span>
-                  <span className='target-value'>
+                <div
+                  className={`${getGlassColor()} rounded-lg p-3 border ${getBorderColor()}`}
+                >
+                  <span className={`${getTextColorLight()} text-sm block mb-1`}>
+                    Need:
+                  </span>
+                  <span className={`${getTextColor()} font-bold text-lg`}>
                     {runsRequired > 0 ? runsRequired : 0} runs
                   </span>
                 </div>
-                <div className='target-item'>
-                  <span className='target-label'>Balls Left:</span>
-                  <span className='target-value'>{ballsRemaining}</span>
+                <div
+                  className={`${getGlassColor()} rounded-lg p-3 border ${getBorderColor()}`}
+                >
+                  <span className={`${getTextColorLight()} text-sm block mb-1`}>
+                    Balls Left:
+                  </span>
+                  <span className={`${getTextColor()} font-bold text-lg`}>
+                    {ballsRemaining}
+                  </span>
                 </div>
-                <div className='target-item'>
-                  <span className='target-label'>CRR:</span>
-                  <span className='target-value'>{runRate}</span>
+                <div
+                  className={`${getGlassColor()} rounded-lg p-3 border ${getBorderColor()}`}
+                >
+                  <span className={`${getTextColorLight()} text-sm block mb-1`}>
+                    CRR:
+                  </span>
+                  <span className={`${getTextColor()} font-bold text-lg`}>
+                    {runRate}
+                  </span>
                 </div>
-                <div className='target-item'>
-                  <span className='target-label'>RRR:</span>
-                  <span className='target-value'>{requiredRunRate}</span>
+                <div
+                  className={`${getGlassColor()} rounded-lg p-3 border ${getBorderColor()}`}
+                >
+                  <span className={`${getTextColorLight()} text-sm block mb-1`}>
+                    RRR:
+                  </span>
+                  <span className={`${getTextColor()} font-bold text-lg`}>
+                    {requiredRunRate}
+                  </span>
                 </div>
               </div>
             )}
           </div>
 
-          <div className='extras-display'>
-            <div className='extra-item'>Wides: {extras.wides}</div>
-            <div className='extra-item'>No Balls: {extras.noBalls}</div>
+          <div className='flex gap-4 mb-6'>
+            <div
+              className={`${getGlassColor()} backdrop-blur-md rounded-lg border ${getBorderColor()} px-4 py-2 ${getTextColor()} flex-1 text-center`}
+            >
+              Wides: {extras.wides}
+            </div>
+            <div
+              className={`${getGlassColor()} backdrop-blur-md rounded-lg border ${getBorderColor()} px-4 py-2 ${getTextColor()} flex-1 text-center`}
+            >
+              No Balls: {extras.noBalls}
+            </div>
           </div>
 
-          <div className='players-section'>
+          <div className='flex flex-col md:flex-row items-center gap-2 md:gap-4 mb-6'>
             <div
-              className={`player-card batsman-card ${
-                onStrike === 'striker' ? 'on-strike' : ''
+              className={`${getGlassColor()} backdrop-blur-md rounded-xl border p-4 flex items-center gap-3 w-full md:flex-1 ${
+                onStrike === 'striker'
+                  ? 'border-yellow-300/70 shadow-lg shadow-yellow-500/30'
+                  : getBorderColor()
               }`}
             >
-              <div className='player-icon'>🏏</div>
-              <div className='player-info'>
-                <label>
+              <div className='text-3xl flex-shrink-0'>🏏</div>
+              <div className='flex-1 overflow-hidden'>
+                <label className={`${getTextColorLight()} text-sm block mb-1`}>
                   {onStrike === 'striker' ? 'Striker ⭐' : 'Non-Striker'}
                 </label>
                 <input
@@ -573,11 +778,12 @@ function App() {
                   value={currentBatsman}
                   onChange={(e) => setCurrentBatsman(e.target.value)}
                   placeholder='Batsman 1'
+                  className={`w-full ${getGlassColor()} border ${getBorderColor()} rounded-lg px-3 py-2 ${getTextColor()} ${getPlaceholderColor()} focus:outline-none focus:ring-2 focus:ring-purple-300/50`}
                 />
               </div>
             </div>
             <button
-              className='btn-switch'
+              className='bg-purple-500/40 backdrop-blur-md border-2 border-purple-300/50 hover:bg-purple-500/60 rounded-full w-10 h-10 md:w-12 md:h-12 text-xl md:text-2xl transition-all duration-200 hover:scale-110 hover:rotate-180 flex items-center justify-center flex-shrink-0'
               onClick={() =>
                 setOnStrike(onStrike === 'striker' ? 'non-striker' : 'striker')
               }
@@ -586,13 +792,15 @@ function App() {
               🔄
             </button>
             <div
-              className={`player-card batsman-card ${
-                onStrike === 'non-striker' ? 'on-strike' : ''
+              className={`${getGlassColor()} backdrop-blur-md rounded-xl border p-4 flex items-center gap-3 w-full md:flex-1 ${
+                onStrike === 'non-striker'
+                  ? 'border-yellow-300/70 shadow-lg shadow-yellow-500/30'
+                  : getBorderColor()
               }`}
             >
-              <div className='player-icon'>🏏</div>
-              <div className='player-info'>
-                <label>
+              <div className='text-3xl flex-shrink-0'>🏏</div>
+              <div className='flex-1 overflow-hidden'>
+                <label className={`${getTextColorLight()} text-sm block mb-1`}>
                   {onStrike === 'non-striker' ? 'Striker ⭐' : 'Non-Striker'}
                 </label>
                 <input
@@ -600,173 +808,308 @@ function App() {
                   value={nonStriker}
                   onChange={(e) => setNonStriker(e.target.value)}
                   placeholder='Batsman 2'
-                />
-              </div>
-            </div>
-            <div className='player-card bowler-card'>
-              <div className='player-icon'>⚾</div>
-              <div className='player-info'>
-                <label>Current Bowler:</label>
-                <input
-                  type='text'
-                  value={currentBowler}
-                  onChange={(e) => setCurrentBowler(e.target.value)}
-                  placeholder='Bowler Name'
+                  className={`w-full ${getGlassColor()} border ${getBorderColor()} rounded-lg px-3 py-2 ${getTextColor()} ${getPlaceholderColor()} focus:outline-none focus:ring-2 focus:ring-purple-300/50`}
                 />
               </div>
             </div>
           </div>
 
-          <div className='current-over'>
-            <h3>Current Over</h3>
-            <div className='balls-container'>
+          <div
+            className={`${getGlassColor()} backdrop-blur-md rounded-xl border ${getBorderColor()} p-4 flex items-center gap-3 mb-6`}
+          >
+            <div className='text-3xl flex-shrink-0'>⚾</div>
+            <div className='flex-1 overflow-hidden'>
+              <label className={`${getTextColorLight()} text-sm block mb-1`}>
+                Current Bowler:
+              </label>
+              <input
+                type='text'
+                value={currentBowler}
+                onChange={(e) => setCurrentBowler(e.target.value)}
+                placeholder='Bowler Name'
+                className={`w-full ${getGlassColor()} border ${getBorderColor()} rounded-lg px-3 py-2 ${getTextColor()} ${getPlaceholderColor()} focus:outline-none focus:ring-2 focus:ring-purple-300/50`}
+              />
+            </div>
+          </div>
+
+          <div
+            className={`${getGlassColor()} backdrop-blur-md rounded-xl border ${getBorderColor()} p-6 mb-6`}
+          >
+            <h3
+              className={`text-xl font-semibold ${getTextColor()} mb-4 text-center`}
+            >
+              Current Over
+            </h3>
+            <div className='flex gap-4 justify-center flex-wrap'>
               {currentOver.map((ball, index) => (
                 <div
                   key={index}
-                  className={`ball ${ball.type === 'W' ? 'wicket' : ''} 
-                  ${ball.type === '4' ? 'four' : ''} 
-                  ${ball.type === '6' ? 'six' : ''}
-                  ${ball.type === 'WD' || ball.type === 'NB' ? 'extra' : ''}
-                  ${ball.type === '0' ? 'dot' : ''}`}
+                  className={`w-12 h-12 rounded-full flex items-center justify-center font-bold ${getTextColor()} border-2 ${
+                    ball.type === 'W'
+                      ? 'bg-red-500/70 border-red-300'
+                      : ball.type === '4'
+                      ? 'bg-blue-500/70 border-blue-300'
+                      : ball.type === '6'
+                      ? 'bg-green-500/70 border-green-300'
+                      : ball.type === 'WD' || ball.type === 'NB'
+                      ? 'bg-yellow-500/70 border-yellow-300'
+                      : ball.type === '0'
+                      ? 'bg-gray-500/70 border-gray-300'
+                      : 'bg-purple-500/70 border-purple-300'
+                  }`}
                 >
                   {getBallDisplay(ball)}
                 </div>
               ))}
               {[...Array(6 - getLegalBallsCount())].map((_, i) => (
-                <div key={`empty-${i}`} className='ball empty'>
+                <div
+                  key={`empty-${i}`}
+                  className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                    theme === 'white' ? 'text-gray-300' : 'text-white/30'
+                  } border-2 ${getBorderColor()} ${getGlassColor()}`}
+                >
                   -
                 </div>
               ))}
             </div>
           </div>
 
-          <div className='controls'>
-            <h3>Ball Types</h3>
-            <div className='button-grid'>
-              <button className='btn btn-dot' onClick={() => addBall('0', 0)}>
-                <div>0</div>
-                <small>dot</small>
-              </button>
-              <button className='btn btn-run' onClick={() => addBall('1', 1)}>
-                <div>1</div>
-                <small>run</small>
-              </button>
-              <button className='btn btn-run' onClick={() => addBall('2', 2)}>
-                <div>2</div>
-                <small>runs</small>
-              </button>
-              <button className='btn btn-run' onClick={() => addBall('3', 3)}>
-                <div>3</div>
-                <small>runs</small>
-              </button>
-              <button className='btn btn-run' onClick={() => addBall('5', 5)}>
-                <div>5</div>
-                <small>runs</small>
-              </button>
-              <button className='btn btn-four' onClick={() => addBall('4', 4)}>
-                <div>4</div>
-                <small>runs</small>
-              </button>
-              <button className='btn btn-six' onClick={() => addBall('6', 6)}>
-                <div>6</div>
-                <small>runs</small>
-              </button>
-              <button className='btn btn-wicket' onClick={addWicket}>
-                <div>W</div>
-                <small>wicket</small>
+          <div
+            className={`${getGlassColor()} backdrop-blur-md rounded-xl border ${getBorderColor()} p-6 mb-6`}
+          >
+            <h3
+              className={`text-xl font-semibold ${getTextColor()} mb-4 text-center`}
+            >
+              Ball Types
+            </h3>
+            <div className='flex flex-wrap gap-4 justify-center'>
+              <button
+                className={`bg-purple-500/40 backdrop-blur-md border-2 border-purple-300/50 hover:bg-purple-500/60 rounded-full w-20 h-20 md:w-24 md:h-24 ${getTextColor()} transition-all duration-200 hover:scale-110 flex flex-col items-center justify-center gap-0.5`}
+                onClick={() => addBall('0', 0)}
+              >
+                <div className='text-2xl font-bold leading-none'>0</div>
+                <small
+                  className={`text-[0.6rem] ${getTextColorLight()} lowercase`}
+                >
+                  dot
+                </small>
               </button>
               <button
-                className='btn btn-extra'
+                className={`bg-purple-500/40 backdrop-blur-md border-2 border-purple-300/50 hover:bg-purple-500/60 rounded-full w-20 h-20 md:w-24 md:h-24 ${getTextColor()} transition-all duration-200 hover:scale-110 flex flex-col items-center justify-center gap-0.5`}
+                onClick={() => addBall('1', 1)}
+              >
+                <div className='text-2xl font-bold leading-none'>1</div>
+                <small
+                  className={`text-[0.6rem] ${getTextColorLight()} lowercase`}
+                >
+                  run
+                </small>
+              </button>
+              <button
+                className={`bg-purple-500/40 backdrop-blur-md border-2 border-purple-300/50 hover:bg-purple-500/60 rounded-full w-20 h-20 md:w-24 md:h-24 ${getTextColor()} transition-all duration-200 hover:scale-110 flex flex-col items-center justify-center gap-0.5`}
+                onClick={() => addBall('2', 2)}
+              >
+                <div className='text-2xl font-bold leading-none'>2</div>
+                <small
+                  className={`text-[0.6rem] ${getTextColorLight()} lowercase`}
+                >
+                  runs
+                </small>
+              </button>
+              <button
+                className={`bg-purple-500/40 backdrop-blur-md border-2 border-purple-300/50 hover:bg-purple-500/60 rounded-full w-20 h-20 md:w-24 md:h-24 ${getTextColor()} transition-all duration-200 hover:scale-110 flex flex-col items-center justify-center gap-0.5`}
+                onClick={() => addBall('3', 3)}
+              >
+                <div className='text-2xl font-bold leading-none'>3</div>
+                <small
+                  className={`text-[0.6rem] ${getTextColorLight()} lowercase`}
+                >
+                  runs
+                </small>
+              </button>
+              <button
+                className={`bg-purple-500/40 backdrop-blur-md border-2 border-purple-300/50 hover:bg-purple-500/60 rounded-full w-20 h-20 md:w-24 md:h-24 ${getTextColor()} transition-all duration-200 hover:scale-110 flex flex-col items-center justify-center gap-0.5`}
+                onClick={() => addBall('5', 5)}
+              >
+                <div className='text-2xl font-bold leading-none'>5</div>
+                <small
+                  className={`text-[0.6rem] ${getTextColorLight()} lowercase`}
+                >
+                  runs
+                </small>
+              </button>
+              <button
+                className={`bg-blue-500/50 backdrop-blur-md border-2 border-blue-300/50 hover:bg-blue-500/70 rounded-full w-20 h-20 md:w-24 md:h-24 ${getTextColor()} transition-all duration-200 hover:scale-110 flex flex-col items-center justify-center gap-0.5`}
+                onClick={() => addBall('4', 4)}
+              >
+                <div className='text-2xl font-bold leading-none'>4</div>
+                <small
+                  className={`text-[0.6rem] ${getTextColorLight()} lowercase`}
+                >
+                  runs
+                </small>
+              </button>
+              <button
+                className={`bg-green-500/50 backdrop-blur-md border-2 border-green-300/50 hover:bg-green-500/70 rounded-full w-20 h-20 md:w-24 md:h-24 ${getTextColor()} transition-all duration-200 hover:scale-110 flex flex-col items-center justify-center gap-0.5`}
+                onClick={() => addBall('6', 6)}
+              >
+                <div className='text-2xl font-bold leading-none'>6</div>
+                <small
+                  className={`text-[0.6rem] ${getTextColorLight()} lowercase`}
+                >
+                  runs
+                </small>
+              </button>
+              <button
+                className={`bg-red-500/50 backdrop-blur-md border-2 border-red-300/50 hover:bg-red-500/70 rounded-full w-20 h-20 md:w-24 md:h-24 ${getTextColor()} transition-all duration-200 hover:scale-110 flex flex-col items-center justify-center gap-0.5`}
+                onClick={addWicket}
+              >
+                <div className='text-2xl font-bold leading-none'>W</div>
+                <small
+                  className={`text-[0.6rem] ${getTextColorLight()} lowercase`}
+                >
+                  wicket
+                </small>
+              </button>
+              <button
+                className={`bg-yellow-500/50 backdrop-blur-md border-2 border-yellow-300/50 hover:bg-yellow-500/70 rounded-full w-20 h-20 md:w-24 md:h-24 ${getTextColor()} transition-all duration-200 hover:scale-110 flex flex-col items-center justify-center gap-0.5`}
                 onClick={() => addBall('WD', 1)}
               >
-                <div>WD</div>
-                <small>wide</small>
+                <div className='text-xl font-bold leading-none'>WD</div>
+                <small
+                  className={`text-[0.6rem] ${getTextColorLight()} lowercase`}
+                >
+                  wide
+                </small>
               </button>
               <button
-                className='btn btn-extra'
+                className={`bg-yellow-500/50 backdrop-blur-md border-2 border-yellow-300/50 hover:bg-yellow-500/70 rounded-full w-20 h-20 md:w-24 md:h-24 ${getTextColor()} transition-all duration-200 hover:scale-110 flex flex-col items-center justify-center gap-0.5`}
                 onClick={() => addBall('WD', 5)}
               >
-                <div>WD4</div>
-                <small>wide</small>
+                <div className='text-xl font-bold leading-none'>WD4</div>
+                <small
+                  className={`text-[0.6rem] ${getTextColorLight()} lowercase`}
+                >
+                  wide
+                </small>
               </button>
               <button
-                className='btn btn-extra'
+                className={`bg-yellow-500/50 backdrop-blur-md border-2 border-yellow-300/50 hover:bg-yellow-500/70 rounded-full w-20 h-20 md:w-24 md:h-24 ${getTextColor()} transition-all duration-200 hover:scale-110 flex flex-col items-center justify-center gap-0.5`}
                 onClick={() => addBall('NB', 1)}
               >
-                <div>NB</div>
-                <small>no ball</small>
+                <div className='text-xl font-bold leading-none'>NB</div>
+                <small
+                  className={`text-[0.6rem] ${getTextColorLight()} lowercase`}
+                >
+                  no ball
+                </small>
               </button>
               <button
-                className='btn btn-extra'
+                className={`bg-yellow-500/50 backdrop-blur-md border-2 border-yellow-300/50 hover:bg-yellow-500/70 rounded-full w-20 h-20 md:w-24 md:h-24 ${getTextColor()} transition-all duration-200 hover:scale-110 flex flex-col items-center justify-center gap-0.5`}
                 onClick={() => addBall('NB', 5)}
               >
-                <div>NB4</div>
-                <small>no ball</small>
+                <div className='text-xl font-bold leading-none'>NB4</div>
+                <small
+                  className={`text-[0.6rem] ${getTextColorLight()} lowercase`}
+                >
+                  no ball
+                </small>
               </button>
               <button
-                className='btn btn-extra'
+                className={`bg-yellow-500/50 backdrop-blur-md border-2 border-yellow-300/50 hover:bg-yellow-500/70 rounded-full w-20 h-20 md:w-24 md:h-24 ${getTextColor()} transition-all duration-200 hover:scale-110 flex flex-col items-center justify-center gap-0.5`}
                 onClick={() => addBall('NB', 7)}
               >
-                <div>NB6</div>
-                <small>no ball</small>
+                <div className='text-xl font-bold leading-none'>NB6</div>
+                <small
+                  className={`text-[0.6rem] ${getTextColorLight()} lowercase`}
+                >
+                  no ball
+                </small>
               </button>
             </div>
           </div>
 
-          <div className='action-buttons'>
-            <button className='btn btn-undo' onClick={undoLastBall}>
+          <div className='grid grid-cols-2 gap-3 md:gap-4 mb-6'>
+            <button
+              className={`bg-purple-500/40 backdrop-blur-md border border-purple-300/50 hover:bg-purple-500/60 rounded-lg px-4 md:px-6 py-3 md:py-4 ${getTextColor()} font-semibold transition-all duration-200 hover:scale-105`}
+              onClick={undoLastBall}
+            >
               ↶ Undo
             </button>
             {innings === 1 ? (
               <>
-                <button className='btn btn-reset' onClick={resetMatch}>
+                <button
+                  className={`bg-purple-500/40 backdrop-blur-md border border-purple-300/50 hover:bg-purple-500/60 rounded-lg px-4 md:px-6 py-3 md:py-4 ${getTextColor()} font-semibold transition-all duration-200 hover:scale-105`}
+                  onClick={resetMatch}
+                >
                   🔄 New Match
                 </button>
                 <button
-                  className='btn btn-start-chase'
+                  className={`bg-purple-500/40 backdrop-blur-md border border-purple-300/50 hover:bg-purple-500/60 rounded-lg px-4 md:px-6 py-3 md:py-4 ${getTextColor()} font-semibold transition-all duration-200 hover:scale-105 col-span-2`}
                   onClick={startSecondInnings}
                 >
                   🏁 Start 2nd Innings
                 </button>
               </>
             ) : (
-              <button className='btn btn-exit-target' onClick={resetFullMatch}>
+              <button
+                className={`bg-purple-500/40 backdrop-blur-md border border-purple-300/50 hover:bg-purple-500/60 rounded-lg px-4 md:px-6 py-3 md:py-4 ${getTextColor()} font-semibold transition-all duration-200 hover:scale-105 col-span-2`}
+                onClick={resetFullMatch}
+              >
                 ❌ New Match
               </button>
             )}
-            <button className='btn btn-reset-all' onClick={resetEverything}>
+            <button
+              className={`bg-red-500/40 backdrop-blur-md border border-red-300/50 hover:bg-red-500/60 rounded-lg px-4 md:px-6 py-3 md:py-4 ${getTextColor()} font-semibold transition-all duration-200 hover:scale-105 col-span-2`}
+              onClick={resetEverything}
+            >
               🗑️ Reset Everything
             </button>
           </div>
 
           {allOvers.length > 0 && (
-            <div className='previous-overs'>
-              <h3>Previous Overs</h3>
-              <div className='overs-list'>
+            <div
+              className={`${getGlassColor()} backdrop-blur-md rounded-xl border ${getBorderColor()} p-6 mb-6`}
+            >
+              <h3 className={`text-xl font-semibold ${getTextColor()} mb-4`}>
+                Previous Overs
+              </h3>
+              <div className='space-y-3'>
                 {allOvers.map((over, overIndex) => (
-                  <div key={overIndex} className='over-summary'>
-                    <span className='over-number'>Over {overIndex + 1}:</span>
-                    <div className='over-balls'>
+                  <div
+                    key={overIndex}
+                    className={`${getGlassColor()} rounded-lg p-3 border ${getBorderColor()}`}
+                  >
+                    <span className={`${getTextColorLight()} font-semibold`}>
+                      Over {overIndex + 1}:
+                    </span>
+                    <div className='flex gap-2 flex-wrap my-2'>
                       {over.map((ball, ballIndex) => (
                         <span
                           key={ballIndex}
-                          className={`ball-summary ${
-                            ball.type === 'W' ? 'wicket' : ''
-                          } 
-                          ${ball.type === '4' ? 'four' : ''} 
-                          ${ball.type === '6' ? 'six' : ''}
-                          ${
-                            ball.type === 'WD' || ball.type === 'NB'
-                              ? 'extra'
-                              : ''
-                          }
-                          ${ball.type === '0' ? 'dot' : ''}`}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${getTextColor()} ${
+                            ball.type === 'W'
+                              ? 'bg-red-500/70'
+                              : ball.type === '4'
+                              ? 'bg-blue-500/70'
+                              : ball.type === '6'
+                              ? 'bg-green-500/70'
+                              : ball.type === 'WD' || ball.type === 'NB'
+                              ? 'bg-yellow-500/70'
+                              : ball.type === '0'
+                              ? 'bg-gray-500/70'
+                              : 'bg-purple-500/70'
+                          }`}
                         >
                           {getBallDisplay(ball)}
                         </span>
                       ))}
                     </div>
-                    <span className='over-runs'>
+                    <span
+                      className={`${
+                        theme === 'white' ? 'text-gray-500' : 'text-white/60'
+                      } text-sm`}
+                    >
                       ({over.reduce((sum, ball) => sum + ball.runs, 0)} runs)
                     </span>
                   </div>
@@ -776,7 +1119,7 @@ function App() {
           )}
 
           {(batsmenStats.length > 0 || bowlerStats.length > 0) && (
-            <div className='player-stats-section'>
+            <div className='mb-6'>
               {/* Display stats for all innings */}
               {[1, 2].map(
                 (inning) =>
@@ -784,50 +1127,61 @@ function App() {
                     0 ||
                     bowlerStats.filter((b) => b.innings === inning).length >
                       0) && (
-                    <div key={inning} style={{ width: '100%' }}>
+                    <div key={inning} className='w-full mb-6'>
                       <h2
-                        style={{
-                          textAlign: 'center',
-                          color: '#667eea',
-                          margin: '1rem 0',
-                          fontSize: '1.5rem',
-                        }}
+                        className={`text-center ${getTextColor()} text-2xl md:text-3xl font-bold my-4`}
                       >
                         Innings {inning} Statistics
                       </h2>
-                      <div
-                        style={{
-                          display: 'flex',
-                          gap: '2rem',
-                          justifyContent: 'center',
-                          flexWrap: 'wrap',
-                        }}
-                      >
+                      <div className='flex gap-6 justify-center flex-wrap'>
                         {batsmenStats.filter((b) => b.innings === inning)
                           .length > 0 && (
-                          <div className='stats-card'>
-                            <h3>🏏 Batting</h3>
-                            <div className='stats-table'>
-                              <div className='stats-header'>
-                                <span>Batsman</span>
-                                <span>Runs</span>
-                                <span>Balls</span>
-                                <span>4s</span>
-                                <span>6s</span>
-                                <span>SR</span>
+                          <div
+                            className={`${getGlassColor()} backdrop-blur-md rounded-xl border ${getBorderColor()} p-6 flex-1 min-w-[300px]`}
+                          >
+                            <h3
+                              className={`text-xl font-semibold ${getTextColor()} mb-4`}
+                            >
+                              🏏 Batting
+                            </h3>
+                            <div className='overflow-x-auto'>
+                              <div
+                                className={`grid grid-cols-7 gap-2 ${getTextColorLight()} text-sm font-semibold mb-2 pb-2 border-b ${getBorderColor()}`}
+                              >
+                                <span className='col-span-2'>Batsman</span>
+                                <span className='text-center'>Runs</span>
+                                <span className='text-center'>Balls</span>
+                                <span className='text-center'>4s</span>
+                                <span className='text-center'>6s</span>
+                                <span className='text-center'>SR</span>
                               </div>
                               {batsmenStats
                                 .filter((b) => b.innings === inning)
                                 .map((batsman, index) => (
-                                  <div key={index} className='stats-row'>
-                                    <span className='player-name'>
+                                  <div
+                                    key={index}
+                                    className={`grid grid-cols-7 gap-2 ${getTextColor()} py-2 border-b ${
+                                      theme === 'white'
+                                        ? 'border-gray-900/10'
+                                        : 'border-white/10'
+                                    }`}
+                                  >
+                                    <span className='font-medium col-span-2'>
                                       {batsman.name}
                                     </span>
-                                    <span>{batsman.runs}</span>
-                                    <span>{batsman.balls}</span>
-                                    <span>{batsman.fours}</span>
-                                    <span>{batsman.sixes}</span>
-                                    <span>
+                                    <span className='text-center'>
+                                      {batsman.runs}
+                                    </span>
+                                    <span className='text-center'>
+                                      {batsman.balls}
+                                    </span>
+                                    <span className='text-center'>
+                                      {batsman.fours}
+                                    </span>
+                                    <span className='text-center'>
+                                      {batsman.sixes}
+                                    </span>
+                                    <span className='text-center'>
                                       {batsman.balls > 0
                                         ? (
                                             (batsman.runs / batsman.balls) *
@@ -843,30 +1197,49 @@ function App() {
 
                         {bowlerStats.filter((b) => b.innings === inning)
                           .length > 0 && (
-                          <div className='stats-card'>
-                            <h3>⚾ Bowling</h3>
-                            <div className='stats-table'>
-                              <div className='stats-header'>
-                                <span>Bowler</span>
-                                <span>Overs</span>
-                                <span>Runs</span>
-                                <span>Wickets</span>
-                                <span>Econ</span>
+                          <div
+                            className={`${getGlassColor()} backdrop-blur-md rounded-xl border ${getBorderColor()} p-6 flex-1 min-w-[300px]`}
+                          >
+                            <h3
+                              className={`text-xl font-semibold ${getTextColor()} mb-4`}
+                            >
+                              ⚾ Bowling
+                            </h3>
+                            <div className='overflow-x-auto'>
+                              <div
+                                className={`grid grid-cols-6 gap-2 ${getTextColorLight()} text-sm font-semibold mb-2 pb-2 border-b ${getBorderColor()}`}
+                              >
+                                <span className='col-span-2'>Bowler</span>
+                                <span className='text-center'>Overs</span>
+                                <span className='text-center'>Runs</span>
+                                <span className='text-center'>Wickets</span>
+                                <span className='text-center'>Econ</span>
                               </div>
                               {bowlerStats
                                 .filter((b) => b.innings === inning)
                                 .map((bowler, index) => (
-                                  <div key={index} className='stats-row'>
-                                    <span className='player-name'>
+                                  <div
+                                    key={index}
+                                    className={`grid grid-cols-6 gap-2 ${getTextColor()} py-2 border-b ${
+                                      theme === 'white'
+                                        ? 'border-gray-900/10'
+                                        : 'border-white/10'
+                                    }`}
+                                  >
+                                    <span className='font-medium col-span-2'>
                                       {bowler.name}
                                     </span>
-                                    <span>
+                                    <span className='text-center'>
                                       {Math.floor(bowler.balls / 6)}.
                                       {bowler.balls % 6}
                                     </span>
-                                    <span>{bowler.runsConceded}</span>
-                                    <span>{bowler.wickets}</span>
-                                    <span>
+                                    <span className='text-center'>
+                                      {bowler.runsConceded}
+                                    </span>
+                                    <span className='text-center'>
+                                      {bowler.wickets}
+                                    </span>
+                                    <span className='text-center'>
                                       {bowler.balls > 0
                                         ? (
                                             bowler.runsConceded /
@@ -886,8 +1259,8 @@ function App() {
             </div>
           )}
 
-          <div className='footer'>
-            <p>Made with love by Ahmed Waqar 🖤</p>
+          <div className='text-center pt-6 border-t border-white/20'>
+            <p className='text-white/60'>Made with love by Ahmed Waqar 🖤</p>
           </div>
         </div>
       </div>
