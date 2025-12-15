@@ -95,25 +95,25 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
             </div>
 
             {addingToTeam === 1 ? (
-              <div className='flex gap-2'>
+              <div className='flex gap-1.5'>
                 <input
                   type='text'
                   value={newPlayerName}
                   onChange={(e) => onNewPlayerNameChange(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && onAddPlayer(1)}
                   placeholder='Player name'
-                  className={`flex-1 ${getGlassColor()} border ${getBorderColor()} rounded-lg px-3 py-2 ${getTextColor()} ${getPlaceholderColor()} focus:outline-none focus:ring-2 focus:ring-purple-300/50`}
+                  className={`flex-1 min-w-0 ${getGlassColor()} border ${getBorderColor()} rounded-lg px-2 py-2 text-sm ${getTextColor()} ${getPlaceholderColor()} focus:outline-none focus:ring-2 focus:ring-purple-300/50`}
                   autoFocus
                 />
                 <button
                   onClick={() => onAddPlayer(1)}
-                  className='bg-green-500/50 hover:bg-green-500/70 rounded-lg px-4 py-2 text-white font-semibold'
+                  className='bg-green-500/50 hover:bg-green-500/70 rounded-lg px-3 py-2 text-white font-semibold text-sm whitespace-nowrap'
                 >
                   Add
                 </button>
                 <button
                   onClick={() => onSetAddingToTeam(null)}
-                  className='bg-red-500/50 hover:bg-red-500/70 rounded-lg px-4 py-2 text-white font-semibold'
+                  className='bg-red-500/50 hover:bg-red-500/70 rounded-lg px-2.5 py-2 text-white font-semibold flex-shrink-0'
                 >
                   ✕
                 </button>
@@ -167,25 +167,25 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
             </div>
 
             {addingToTeam === 2 ? (
-              <div className='flex gap-2'>
+              <div className='flex gap-1.5'>
                 <input
                   type='text'
                   value={newPlayerName}
                   onChange={(e) => onNewPlayerNameChange(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && onAddPlayer(2)}
                   placeholder='Player name'
-                  className={`flex-1 ${getGlassColor()} border ${getBorderColor()} rounded-lg px-3 py-2 ${getTextColor()} ${getPlaceholderColor()} focus:outline-none focus:ring-2 focus:ring-purple-300/50`}
+                  className={`flex-1 min-w-0 ${getGlassColor()} border ${getBorderColor()} rounded-lg px-2 py-2 text-sm ${getTextColor()} ${getPlaceholderColor()} focus:outline-none focus:ring-2 focus:ring-purple-300/50`}
                   autoFocus
                 />
                 <button
                   onClick={() => onAddPlayer(2)}
-                  className='bg-green-500/50 hover:bg-green-500/70 rounded-lg px-4 py-2 text-white font-semibold'
+                  className='bg-green-500/50 hover:bg-green-500/70 rounded-lg px-3 py-2 text-white font-semibold text-sm whitespace-nowrap'
                 >
                   Add
                 </button>
                 <button
                   onClick={() => onSetAddingToTeam(null)}
-                  className='bg-red-500/50 hover:bg-red-500/70 rounded-lg px-4 py-2 text-white font-semibold'
+                  className='bg-red-500/50 hover:bg-red-500/70 rounded-lg px-2.5 py-2 text-white font-semibold flex-shrink-0'
                 >
                   ✕
                 </button>
