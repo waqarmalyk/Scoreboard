@@ -35,9 +35,9 @@ export const BallTypeButtons: React.FC<BallTypeButtonsProps> = ({
       onBallClick(runs.toString() as BallType, runs);
     } else if (extraType === 'WALL') {
       // Wall - adds 1 run automatically (wall advantage) + batsman runs
-      // Total = 1 (wall) + batsman runs, credited fully to batsman
+      // Pass actual batsman runs (not total) as third param for correct rotation logic
       const totalRuns = runs + 1; // Wall (1) + batsman runs
-      onBallClick(runs.toString() as BallType, totalRuns, totalRuns);
+      onBallClick(runs.toString() as BallType, totalRuns, runs);
     } else {
       // WD or NB with batsman runs
       const totalRuns = runs + 1; // Extra penalty + runs made by batsman

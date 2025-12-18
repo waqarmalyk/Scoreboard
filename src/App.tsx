@@ -316,22 +316,6 @@ function App() {
       bowlerStatsBefore: previousBowlerStats,
     });
 
-    // Check if target is achieved in 2nd innings (win by wickets)
-    if (targetMode && newTotalRuns >= target) {
-      // Save second innings data before showing summary
-      setInnings2Score(newTotalRuns);
-      setInnings2Wickets(wickets);
-      const totalBalls2nd =
-        (innings === 2 ? totalBalls : 0) +
-        (type !== 'WD' && type !== 'NB' ? 1 : 0);
-      setInnings2Overs(`${Math.floor(totalBalls2nd / 6)}.${totalBalls2nd % 6}`);
-
-      setTimeout(() => {
-        setMatchCompleted(true);
-      }, 500);
-      return; // Don't process rest of the ball logic
-    }
-
     // Update extras
     if (type === 'WD') {
       setExtras({ ...extras, wides: extras.wides + runs });
@@ -342,40 +326,62 @@ function App() {
     // Update player stats
     const isLegal = type !== 'WD' && type !== 'NB';
 
-    // Determine runs to credit to batsman
+    // Determine runs to credit to batsman and runs for rotation
     let runsForBatsman = runs;
+    let runsForRotation = runs;
+
     if (batsmanRuns !== undefined) {
-      // If batsmanRuns is explicitly provided, use it (for WD/NB with batsman runs, or leg byes)
-      runsForBatsman = batsmanRuns;
+      // Wall scenario: batsmanRuns < runs (e.g., batsmanRuns=2, runs=3 for wall)
+      if (isLegal && batsmanRuns < runs) {
+        // Wall: credit total runs to batsman, but rotate based on actual runs made
+        runsForBatsman = runs; // Total runs including wall bonus
+        runsForRotation = batsmanRuns; // Actual runs batsman made (for rotation)
+      } else {
+        // WD/NB with batsman runs, or other scenarios
+        runsForBatsman = batsmanRuns;
+        runsForRotation = batsmanRuns;
+      }
     } else if (!isLegal) {
       // Simple WD or NB without batsman runs - no runs to batsman
       runsForBatsman = 0;
+      runsForRotation = 0;
     }
 
     if (isLegal) {
       updateBatsmanStats(runsForBatsman, type === '4', type === '6');
 
-      // Strike rotation based on actual runs made by batsman (the ball type, not bonus)
-      // For Wall: rotation based on runs batsman actually made, not including wall bonus
-      // For normal balls: runs determine rotation
-      const runsForRotation =
-        batsmanRuns !== undefined && batsmanRuns !== runs
-          ? parseInt(type) // For Wall, use the ball type (actual runs made)
-          : runsForBatsman; // For normal balls, use runsForBatsman
-
+      // Strike rotation based on actual runs made by batsman
       if ([1, 3, 5].includes(runsForRotation)) {
         setOnStrike(onStrike === 'striker' ? 'non-striker' : 'striker');
       }
     } else if (batsmanRuns !== undefined && batsmanRuns > 0) {
       // WD or NB with batsman runs - update batsman stats
       updateBatsmanStats(runsForBatsman, false, false);
-      // Rotate strike on odd batsman runs (normal rotation for extras)
-      if ([1, 3, 5].includes(runsForBatsman)) {
+      // Rotate strike on odd batsman runs
+      if ([1, 3, 5].includes(runsForRotation)) {
         setOnStrike(onStrike === 'striker' ? 'non-striker' : 'striker');
       }
     }
 
     updateBowlerStats(runs, false, isLegal);
+
+    // Check if target is achieved in 2nd innings (win by wickets) - AFTER stats updated
+    if (targetMode && newTotalRuns >= target) {
+      // Calculate final balls for 2nd innings
+      const totalBalls2nd =
+        (innings === 2 ? totalBalls : 0) +
+        (type !== 'WD' && type !== 'NB' ? 1 : 0);
+
+      // Save second innings data before showing summary
+      setInnings2Score(newTotalRuns);
+      setInnings2Wickets(wickets);
+      setInnings2Overs(`${Math.floor(totalBalls2nd / 6)}.${totalBalls2nd % 6}`);
+
+      setTimeout(() => {
+        setMatchCompleted(true);
+      }, 500);
+      return; // Don't process rest of the ball logic
+    }
 
     // Track total balls (for both innings)
     let newTotalBalls = totalBalls;
