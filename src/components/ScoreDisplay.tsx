@@ -9,6 +9,7 @@ interface ScoreDisplayProps {
   ballsRemaining: number;
   runRate: string;
   requiredRunRate: string;
+  matchOvers: number;
   theme: string;
   getGlassColor: () => string;
   getBorderColor: () => string;
@@ -27,6 +28,7 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   ballsRemaining,
   runRate,
   requiredRunRate,
+  matchOvers,
   theme,
   getGlassColor,
   getBorderColor,
@@ -50,10 +52,17 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             /{wickets}
           </span>
         </div>
-        <div className='bg-purple-500/40 backdrop-blur-md border border-purple-300/50 rounded-lg px-4 py-2'>
-          <span className={`${getTextColor()} font-semibold`}>
-            {innings === 1 ? '1st Innings' : '2nd Innings'}
-          </span>
+        <div className='flex flex-col items-end gap-2'>
+          <div className='bg-purple-500/40 backdrop-blur-md border border-purple-300/50 rounded-lg px-4 py-2'>
+            <span className={`${getTextColor()} font-semibold`}>
+              {innings === 1 ? '1st Innings' : '2nd Innings'}
+            </span>
+          </div>
+          {innings === 1 && matchOvers > 0 && (
+            <div className={`${getTextColor()} text-base font-bold mt-1`}>
+              {matchOvers} over{matchOvers !== 1 ? 's' : ''} match
+            </div>
+          )}
         </div>
       </div>
       <div className={`flex items-center gap-2 ${getTextColor()} mb-4`}>

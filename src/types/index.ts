@@ -23,6 +23,7 @@ export type ThemeColor =
 export interface Ball {
   type: BallType;
   runs: number;
+  fielder?: string; // For wickets - who took the catch
 }
 
 export interface PlayerStats {
@@ -40,5 +41,13 @@ export interface BowlerStats {
   wickets: number;
   overs: number;
   balls: number;
+  innings: number;
+  wides: number;
+  noBalls: number;
+}
+
+export interface FielderStats {
+  name: string;
+  catches: number;
   innings: number;
 }

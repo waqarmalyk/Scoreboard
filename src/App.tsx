@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import './App.css';
-import type { Ball, BallType, PlayerStats, BowlerStats } from './types';
+import type {
+  Ball,
+  BallType,
+  PlayerStats,
+  BowlerStats,
+  FielderStats,
+} from './types';
 import { useTheme } from './hooks/useTheme';
 import { ThemeColorPicker } from './components/ThemeColorPicker';
 import { TeamNameInput } from './components/TeamNameInput';
@@ -66,6 +72,10 @@ function App() {
     const saved = sessionStorage.getItem('bowlerStats');
     return saved ? JSON.parse(saved) : [];
   });
+  const [fielderStats, setFielderStats] = useState<FielderStats[]>(() => {
+    const saved = sessionStorage.getItem('fielderStats');
+    return saved ? JSON.parse(saved) : [];
+  });
 
   const [totalRuns, setTotalRuns] = useState(0);
   const [wickets, setWickets] = useState(0);
@@ -87,6 +97,9 @@ function App() {
   const [innings1BowlerStats, setInnings1BowlerStats] = useState<BowlerStats[]>(
     []
   );
+  const [innings1FielderStats, setInnings1FielderStats] = useState<
+    FielderStats[]
+  >([]);
   const [innings1Score, setInnings1Score] = useState(0);
   const [innings1Wickets, setInnings1Wickets] = useState(0);
   const [innings1Overs, setInnings1Overs] = useState('');
@@ -94,6 +107,12 @@ function App() {
   const [innings2Score, setInnings2Score] = useState(0);
   const [innings2Wickets, setInnings2Wickets] = useState(0);
   const [innings2Overs, setInnings2Overs] = useState('');
+
+  // Match configuration
+  const [matchOvers, setMatchOvers] = useState(() => {
+    const saved = sessionStorage.getItem('matchOvers');
+    return saved ? parseInt(saved) : 0;
+  });
 
   // Target mode state
   const [targetMode, setTargetMode] = useState(false);
@@ -110,6 +129,7 @@ function App() {
     onStrikeWas: 'striker' | 'non-striker';
     batsmenStatsBefore: PlayerStats[];
     bowlerStatsBefore: BowlerStats[];
+    fielderStatsBefore: FielderStats[];
   } | null>(null);
 
   // Persist to sessionStorage
@@ -118,15 +138,19 @@ function App() {
     sessionStorage.setItem('team2Name', team2Name);
     sessionStorage.setItem('batsmenStats', JSON.stringify(batsmenStats));
     sessionStorage.setItem('bowlerStats', JSON.stringify(bowlerStats));
+    sessionStorage.setItem('fielderStats', JSON.stringify(fielderStats));
     sessionStorage.setItem('team1Players', JSON.stringify(team1Players));
     sessionStorage.setItem('team2Players', JSON.stringify(team2Players));
+    sessionStorage.setItem('matchOvers', matchOvers.toString());
   }, [
     team1Name,
     team2Name,
     batsmenStats,
     bowlerStats,
+    fielderStats,
     team1Players,
     team2Players,
+    matchOvers,
   ]);
 
   const addPlayerToTeam = (team: 1 | 2) => {
@@ -136,6 +160,13 @@ function App() {
     }
 
     const players = team === 1 ? team1Players : team2Players;
+
+    // Check if team already has 11 players
+    if (players.length >= 11) {
+      alert('Maximum 11 players allowed per team!');
+      return;
+    }
+
     if (players.includes(newPlayerName.trim())) {
       alert('Player already exists in this team!');
       return;
@@ -163,6 +194,12 @@ function App() {
       alert('Please add at least one player to each team before starting!');
       return;
     }
+    if (!matchOvers || matchOvers <= 0) {
+      alert('Please set the number of overs for the match!');
+      return;
+    }
+    // Set maxBalls for first innings based on overs
+    setMaxBalls(matchOvers * 6);
     setMatchStarted(true);
   };
 
@@ -215,7 +252,8 @@ function App() {
   const updateBowlerStats = (
     runs: number,
     isWicket: boolean,
-    isLegal: boolean
+    isLegal: boolean,
+    ballType: BallType
   ) => {
     const existingBowler = bowlerStats.find(
       (b) => b.name === currentBowler && b.innings === innings
@@ -231,6 +269,8 @@ function App() {
                 wickets: b.wickets + (isWicket ? 1 : 0),
                 balls: newBalls,
                 overs: Math.floor(newBalls / 6) + (newBalls % 6) / 10,
+                wides: b.wides + (ballType === 'WD' ? 1 : 0),
+                noBalls: b.noBalls + (ballType === 'NB' ? 1 : 0),
               }
             : b
         )
@@ -244,6 +284,32 @@ function App() {
           wickets: isWicket ? 1 : 0,
           balls: isLegal ? 1 : 0,
           overs: isLegal ? 0.1 : 0,
+          innings: innings,
+          wides: ballType === 'WD' ? 1 : 0,
+          noBalls: ballType === 'NB' ? 1 : 0,
+        },
+      ]);
+    }
+  };
+
+  const updateFielderStats = (fielderName: string) => {
+    const existingFielder = fielderStats.find(
+      (f) => f.name === fielderName && f.innings === innings
+    );
+    if (existingFielder) {
+      setFielderStats(
+        fielderStats.map((f) =>
+          f.name === fielderName && f.innings === innings
+            ? { ...f, catches: f.catches + 1 }
+            : f
+        )
+      );
+    } else {
+      setFielderStats([
+        ...fielderStats,
+        {
+          name: fielderName,
+          catches: 1,
           innings: innings,
         },
       ]);
@@ -297,6 +363,7 @@ function App() {
     const batsmanName = onStrike === 'striker' ? currentBatsman : nonStriker;
     const previousBatsmenStats = JSON.parse(JSON.stringify(batsmenStats));
     const previousBowlerStats = JSON.parse(JSON.stringify(bowlerStats));
+    const previousFielderStats = JSON.parse(JSON.stringify(fielderStats));
 
     const newBall: Ball = { type, runs };
     const updatedOver = [...currentOver, newBall];
@@ -314,6 +381,7 @@ function App() {
       onStrikeWas: onStrike,
       batsmenStatsBefore: previousBatsmenStats,
       bowlerStatsBefore: previousBowlerStats,
+      fielderStatsBefore: previousFielderStats,
     });
 
     // Update extras
@@ -363,7 +431,7 @@ function App() {
       }
     }
 
-    updateBowlerStats(runs, false, isLegal);
+    updateBowlerStats(runs, false, isLegal, type);
 
     // Check if target is achieved in 2nd innings (win by wickets) - AFTER stats updated
     if (targetMode && newTotalRuns >= target) {
@@ -385,9 +453,20 @@ function App() {
 
     // Track total balls (for both innings)
     let newTotalBalls = totalBalls;
+    let newFirstInningsBalls = firstInningsBalls;
     if (type !== 'WD' && type !== 'NB') {
       if (innings === 1) {
-        setFirstInningsBalls(firstInningsBalls + 1);
+        newFirstInningsBalls = firstInningsBalls + 1;
+        setFirstInningsBalls(newFirstInningsBalls);
+
+        // Check if overs completed in 1st innings
+        if (newFirstInningsBalls >= maxBalls) {
+          setTimeout(() => {
+            alert(
+              'Overs completed! Click "Start 2nd Innings" to begin the chase.'
+            );
+          }, 500);
+        }
       } else {
         newTotalBalls = totalBalls + 1;
         setTotalBalls(newTotalBalls);
@@ -475,8 +554,74 @@ function App() {
     const batsmanName = onStrike === 'striker' ? currentBatsman : nonStriker;
     const previousBatsmenStats = JSON.parse(JSON.stringify(batsmenStats));
     const previousBowlerStats = JSON.parse(JSON.stringify(bowlerStats));
+    const previousFielderStats = JSON.parse(JSON.stringify(fielderStats));
 
-    const newBall: Ball = { type: 'W', runs: 0 };
+    // Get fielding team players
+    const fieldingTeamPlayers = getBowlingTeamPlayers();
+
+    // Prompt for fielder who took the catch - keep prompting until valid input
+    let fielderName = '';
+    if (fieldingTeamPlayers.length > 0) {
+      let validInput = false;
+
+      while (!validInput) {
+        const fielderPrompt = `Who took the catch?\n\n${fieldingTeamPlayers
+          .map((p, i) => `${i + 1}. ${p}`)
+          .join('\n')}\n\nEnter number (1-${
+          fieldingTeamPlayers.length
+        }) or type name:`;
+        const fielderInput = window.prompt(fielderPrompt);
+
+        // If user cancels, exit without recording wicket
+        if (fielderInput === null) {
+          return;
+        }
+
+        if (fielderInput) {
+          const trimmedInput = fielderInput.trim();
+
+          // If empty after trim, show error and continue loop
+          if (!trimmedInput) {
+            alert('Fielder name cannot be empty!');
+            continue;
+          }
+
+          const fielderIndex = parseInt(trimmedInput) - 1;
+
+          // Check if input is a number
+          if (
+            !isNaN(fielderIndex) &&
+            trimmedInput === (fielderIndex + 1).toString()
+          ) {
+            // It's a number input - validate it's in range
+            if (
+              fielderIndex >= 0 &&
+              fielderIndex < fieldingTeamPlayers.length
+            ) {
+              fielderName = fieldingTeamPlayers[fielderIndex];
+              validInput = true;
+            } else {
+              alert(
+                `Invalid selection! Please enter a number between 1 and ${fieldingTeamPlayers.length}`
+              );
+              // Continue loop to re-prompt
+            }
+          } else {
+            // It's a name input - accept it
+            fielderName = trimmedInput;
+            validInput = true;
+          }
+        } else {
+          alert('Fielder name cannot be empty!');
+        }
+      }
+    }
+
+    const newBall: Ball = {
+      type: 'W',
+      runs: 0,
+      fielder: fielderName,
+    };
     const updatedOver = [...currentOver, newBall];
 
     setWickets(wickets + 1);
@@ -491,6 +636,7 @@ function App() {
       onStrikeWas: onStrike,
       batsmenStatsBefore: previousBatsmenStats,
       bowlerStatsBefore: previousBowlerStats,
+      fielderStatsBefore: previousFielderStats,
     });
 
     setWickets(wickets + 1);
@@ -498,7 +644,12 @@ function App() {
 
     // Update player stats
     updateBatsmanStats(0, false, false);
-    updateBowlerStats(0, true, true);
+    updateBowlerStats(0, true, true, 'W');
+
+    // Update fielder stats if fielder was selected
+    if (fielderName) {
+      updateFielderStats(fielderName);
+    }
 
     // Check if all out in 2nd innings (bowling team wins)
     const newWickets = wickets + 1;
@@ -565,8 +716,10 @@ function App() {
     // Reset stats but keep teams
     setBatsmenStats([]);
     setBowlerStats([]);
+    setFielderStats([]);
     sessionStorage.removeItem('batsmenStats');
     sessionStorage.removeItem('bowlerStats');
+    sessionStorage.removeItem('fielderStats');
 
     // Reset player selections
     setCurrentBatsman('');
@@ -585,12 +738,10 @@ function App() {
       return;
     }
 
-    // Save first innings total balls
-    const firstInningsBallsCount = firstInningsBalls;
-
     // Save first innings stats for match summary
     setInnings1BatsmenStats(JSON.parse(JSON.stringify(batsmenStats)));
     setInnings1BowlerStats(JSON.parse(JSON.stringify(bowlerStats)));
+    setInnings1FielderStats(JSON.parse(JSON.stringify(fielderStats)));
     setInnings1Score(totalRuns);
     setInnings1Wickets(wickets);
     const totalOvers1st = allOvers.length;
@@ -599,7 +750,8 @@ function App() {
 
     // Set target (first innings + 1)
     setTarget(totalRuns + 1);
-    setMaxBalls(firstInningsBallsCount);
+    // Use the lesser of: match overs OR first innings balls (in case first innings ended early)
+    setMaxBalls(Math.min(matchOvers * 6, firstInningsBalls));
     setTargetMode(true);
     setInnings(2);
 
@@ -615,8 +767,10 @@ function App() {
     // Reset stats for second innings
     setBatsmenStats([]);
     setBowlerStats([]);
+    setFielderStats([]);
     sessionStorage.removeItem('batsmenStats');
     sessionStorage.removeItem('bowlerStats');
+    sessionStorage.removeItem('fielderStats');
 
     // Reset player selections but stay in match
     setCurrentBatsman('');
@@ -678,6 +832,7 @@ function App() {
     // Restore player stats from before the last action
     setBatsmenStats(lastAction.batsmenStatsBefore);
     setBowlerStats(lastAction.bowlerStatsBefore);
+    setFielderStats(lastAction.fielderStatsBefore);
 
     // Get the ball to undo
     const ballToUndo = lastAction.ball;
@@ -768,47 +923,121 @@ function App() {
     const allBatsmen = [...innings1BatsmenStats, ...batsmenStats];
     const allBowlers = [...innings1BowlerStats, ...bowlerStats];
 
-    // Find highest run scorer
-    const highestScorer = allBatsmen.reduce(
-      (prev, current) => (current.runs > prev.runs ? current : prev),
-      { name: '', runs: 0, balls: 0, fours: 0, sixes: 0, innings: 1 }
+    // Determine winning team
+    const team2Won = innings2Score >= target;
+    const winningTeamIndex = team2Won ? 2 : 1;
+
+    // Calculate points for each batsman
+    const batsmenWithPoints = allBatsmen.map((batsman) => {
+      let points = 0;
+
+      // Base points: 1 point per run
+      points += batsman.runs;
+
+      // Bonus for milestones
+      if (batsman.runs >= 50) points += 20;
+      else if (batsman.runs >= 30) points += 10;
+
+      // Strike rate bonus (if SR > 150)
+      if (batsman.balls > 0) {
+        const strikeRate = (batsman.runs / batsman.balls) * 100;
+        if (strikeRate > 150) points += 15;
+        else if (strikeRate > 120) points += 10;
+      }
+
+      // Boundaries bonus
+      points += batsman.fours * 2;
+      points += batsman.sixes * 4;
+
+      // Winning team bonus
+      if (batsman.innings === winningTeamIndex) points += 15;
+
+      return { ...batsman, points };
+    });
+
+    // Calculate points for each bowler
+    const bowlersWithPoints = allBowlers.map((bowler) => {
+      let points = 0;
+
+      // Base points: 20 points per wicket
+      points += bowler.wickets * 20;
+
+      // Bonus for multiple wickets
+      if (bowler.wickets >= 3) points += 25;
+      else if (bowler.wickets >= 2) points += 10;
+
+      // Economy rate bonus (if economy < 6)
+      if (bowler.overs > 0) {
+        const economy = bowler.runsConceded / bowler.overs;
+        if (economy < 4) points += 20;
+        else if (economy < 6) points += 10;
+      }
+
+      // Penalty for expensive bowling (economy > 10)
+      if (bowler.overs > 0) {
+        const economy = bowler.runsConceded / bowler.overs;
+        if (economy > 10) points -= 10;
+      }
+
+      // Winning team bonus
+      if (bowler.innings === winningTeamIndex) points += 15;
+
+      return { ...bowler, points };
+    });
+
+    // Find player with highest points
+    const topBatsman = batsmenWithPoints.reduce(
+      (prev, current) => (current.points > prev.points ? current : prev),
+      { name: '', runs: 0, balls: 0, fours: 0, sixes: 0, innings: 1, points: 0 }
     );
 
-    // Find best bowler (most wickets, then least runs conceded)
-    const bestBowler = allBowlers.reduce(
-      (prev, current) => {
-        if (current.wickets > prev.wickets) return current;
-        if (
-          current.wickets === prev.wickets &&
-          current.runsConceded < prev.runsConceded
-        )
-          return current;
-        return prev;
-      },
-      { name: '', runsConceded: 0, wickets: 0, balls: 0, overs: 0, innings: 1 }
+    const topBowler = bowlersWithPoints.reduce(
+      (prev, current) => (current.points > prev.points ? current : prev),
+      {
+        name: '',
+        runsConceded: 0,
+        wickets: 0,
+        balls: 0,
+        overs: 0,
+        innings: 1,
+        points: 0,
+        wides: 0,
+        noBalls: 0,
+      }
     );
 
-    // Decide Man of the Match
-    // Priority: 50+ runs, or 3+ wickets, or highest scorer/wicket taker
-    if (highestScorer.runs >= 50) {
+    // Compare and select MOTM
+    if (topBatsman.points > topBowler.points) {
+      const strikeRate =
+        topBatsman.balls > 0
+          ? ((topBatsman.runs / topBatsman.balls) * 100).toFixed(1)
+          : '0.0';
       return {
-        name: highestScorer.name,
-        reason: `${highestScorer.runs} runs from ${highestScorer.balls} balls`,
+        name: topBatsman.name,
+        reason: `${topBatsman.runs} runs (${topBatsman.balls}b, ${topBatsman.fours}×4, ${topBatsman.sixes}×6, SR: ${strikeRate})`,
       };
-    } else if (bestBowler.wickets >= 3) {
+    } else if (topBowler.wickets > 0) {
+      const economy =
+        topBowler.overs > 0
+          ? (topBowler.runsConceded / topBowler.overs).toFixed(2)
+          : '0.00';
       return {
-        name: bestBowler.name,
-        reason: `${bestBowler.wickets} wickets for ${bestBowler.runsConceded} runs`,
-      };
-    } else if (highestScorer.runs >= bestBowler.wickets * 15) {
-      return {
-        name: highestScorer.name,
-        reason: `${highestScorer.runs} runs from ${highestScorer.balls} balls`,
+        name: topBowler.name,
+        reason: `${topBowler.wickets} wicket${
+          topBowler.wickets !== 1 ? 's' : ''
+        } for ${topBowler.runsConceded} runs (Econ: ${economy})`,
       };
     } else {
+      // Fallback to highest scorer if no bowler took wickets
+      const strikeRate =
+        topBatsman.balls > 0
+          ? ((topBatsman.runs / topBatsman.balls) * 100).toFixed(1)
+          : '0.0';
       return {
-        name: bestBowler.name,
-        reason: `${bestBowler.wickets} wickets for ${bestBowler.runsConceded} runs`,
+        name: topBatsman.name || 'No standout performance',
+        reason: topBatsman.name
+          ? `${topBatsman.runs} runs (${topBatsman.balls}b, SR: ${strikeRate})`
+          : 'Match completed',
       };
     }
   };
@@ -819,7 +1048,9 @@ function App() {
 
     let winMargin = '';
     if (team2Won) {
-      const wicketsRemaining = 10 - innings2Wickets;
+      // Calculate wickets remaining based on actual team size
+      const team2TotalWickets = team2Players.length - 1;
+      const wicketsRemaining = team2TotalWickets - innings2Wickets;
       winMargin = `by ${wicketsRemaining} wicket${
         wicketsRemaining !== 1 ? 's' : ''
       }`;
@@ -861,8 +1092,10 @@ function App() {
     // Reset current stats
     setBatsmenStats([]);
     setBowlerStats([]);
+    setFielderStats([]);
     sessionStorage.removeItem('batsmenStats');
     sessionStorage.removeItem('bowlerStats');
+    sessionStorage.removeItem('fielderStats');
 
     // Reset player selections
     setCurrentBatsman('');
@@ -924,8 +1157,10 @@ function App() {
               team2Name={team2Name}
               team1Players={team1Players}
               team2Players={team2Players}
+              matchOvers={matchOvers}
               onTeam1NameChange={setTeam1Name}
               onTeam2NameChange={setTeam2Name}
+              onMatchOversChange={setMatchOvers}
               onAddPlayer={addPlayerToTeam}
               onRemovePlayer={removePlayerFromTeam}
               newPlayerName={newPlayerName}
@@ -953,8 +1188,10 @@ function App() {
               winMargin={getMatchResult().winMargin}
               innings1BatsmenStats={innings1BatsmenStats}
               innings1BowlerStats={innings1BowlerStats}
+              innings1FielderStats={innings1FielderStats}
               innings2BatsmenStats={batsmenStats}
               innings2BowlerStats={bowlerStats}
+              innings2FielderStats={fielderStats}
               manOfTheMatch={calculateManOfTheMatch()}
               onNewMatch={handleNewMatchFromSummary}
               getTextColor={getTextColor}
@@ -988,6 +1225,7 @@ function App() {
                 ballsRemaining={ballsRemaining}
                 runRate={runRate}
                 requiredRunRate={requiredRunRate}
+                matchOvers={matchOvers}
                 theme={theme}
                 getGlassColor={getGlassColor}
                 getBorderColor={getBorderColor}

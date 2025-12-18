@@ -3,8 +3,10 @@ interface PlayerSetupProps {
   team2Name: string;
   team1Players: string[];
   team2Players: string[];
+  matchOvers: number;
   onTeam1NameChange: (name: string) => void;
   onTeam2NameChange: (name: string) => void;
+  onMatchOversChange: (overs: number) => void;
   onAddPlayer: (team: 1 | 2) => void;
   onRemovePlayer: (team: 1 | 2, playerName: string) => void;
   newPlayerName: string;
@@ -24,8 +26,10 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
   team2Name,
   team1Players,
   team2Players,
+  matchOvers,
   onTeam1NameChange,
   onTeam2NameChange,
+  onMatchOversChange,
   onAddPlayer,
   onRemovePlayer,
   newPlayerName,
@@ -53,6 +57,28 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
           <p className={`text-xl ${getTextColorLight()}`}>
             Add players to both teams before starting the match
           </p>
+        </div>
+
+        {/* Match Overs Configuration */}
+        <div className='mb-6'>
+          <div
+            className={`${getGlassColor()} backdrop-blur-md rounded-xl border ${getBorderColor()} p-6`}
+          >
+            <label className={`${getTextColorLight()} text-sm block mb-2`}>
+              Match Overs
+            </label>
+            <input
+              type='number'
+              min='1'
+              max='50'
+              value={matchOvers || ''}
+              onChange={(e) =>
+                onMatchOversChange(parseInt(e.target.value) || 0)
+              }
+              placeholder='Enter number of overs (e.g., 5, 10, 20)'
+              className={`w-full ${getGlassColor()} border ${getBorderColor()} rounded-lg px-4 py-2 ${getTextColor()} ${getPlaceholderColor()} focus:outline-none focus:ring-2 focus:ring-purple-300/50`}
+            />
+          </div>
         </div>
 
         <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
