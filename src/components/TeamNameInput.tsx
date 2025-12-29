@@ -2,6 +2,7 @@ interface TeamNameInputProps {
   team1Name: string;
   team2Name: string;
   innings: 1 | 2;
+  tossWinner: 1 | 2 | null;
   onTeam1Change: (name: string) => void;
   onTeam2Change: (name: string) => void;
   getGlassColor: () => string;
@@ -15,6 +16,7 @@ export const TeamNameInput: React.FC<TeamNameInputProps> = ({
   team1Name,
   team2Name,
   innings,
+  tossWinner,
   onTeam1Change,
   onTeam2Change,
   getGlassColor,
@@ -23,6 +25,31 @@ export const TeamNameInput: React.FC<TeamNameInputProps> = ({
   getTextColorLight,
   getPlaceholderColor,
 }) => {
+  // Determine batting and bowling teams based on toss and innings
+  const getBattingTeam = () => {
+    if (innings === 1) {
+      return tossWinner === 1 ? team1Name : team2Name;
+    } else {
+      return tossWinner === 1 ? team2Name : team1Name;
+    }
+  };
+
+  const getBowlingTeam = () => {
+    if (innings === 1) {
+      return tossWinner === 1 ? team2Name : team1Name;
+    } else {
+      return tossWinner === 1 ? team1Name : team2Name;
+    }
+  };
+
+  const isBattingTeam1 = () => {
+    if (innings === 1) {
+      return tossWinner === 1;
+    } else {
+      return tossWinner === 2;
+    }
+  };
+
   return (
     <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'>
       <div
@@ -31,14 +58,13 @@ export const TeamNameInput: React.FC<TeamNameInputProps> = ({
         <div className='text-3xl'>🏏</div>
         <div className='flex-1'>
           <label className={`${getTextColorLight()} text-sm block mb-1`}>
-            {' '}
-            Team 1
+            Batting Team
           </label>
           <input
             type='text'
-            value={innings === 1 ? team1Name : team2Name}
+            value={getBattingTeam()}
             onChange={(e) =>
-              innings === 1
+              isBattingTeam1()
                 ? onTeam1Change(e.target.value)
                 : onTeam2Change(e.target.value)
             }
@@ -53,14 +79,13 @@ export const TeamNameInput: React.FC<TeamNameInputProps> = ({
         <div className='text-3xl'>⚾</div>
         <div className='flex-1'>
           <label className={`${getTextColorLight()} text-sm block mb-1`}>
-            {' '}
-            Team 2
+            Bowling Team
           </label>
           <input
             type='text'
-            value={innings === 1 ? team2Name : team1Name}
+            value={getBowlingTeam()}
             onChange={(e) =>
-              innings === 1
+              isBattingTeam1()
                 ? onTeam2Change(e.target.value)
                 : onTeam1Change(e.target.value)
             }

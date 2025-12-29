@@ -4,9 +4,11 @@ interface PlayerSetupProps {
   team1Players: string[];
   team2Players: string[];
   matchOvers: number;
+  tossWinner: 1 | 2 | null;
   onTeam1NameChange: (name: string) => void;
   onTeam2NameChange: (name: string) => void;
   onMatchOversChange: (overs: number) => void;
+  onTossWinnerChange: (team: 1 | 2 | null) => void;
   onAddPlayer: (team: 1 | 2) => void;
   onRemovePlayer: (team: 1 | 2, playerName: string) => void;
   newPlayerName: string;
@@ -27,9 +29,11 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
   team1Players,
   team2Players,
   matchOvers,
+  tossWinner,
   onTeam1NameChange,
   onTeam2NameChange,
   onMatchOversChange,
+  onTossWinnerChange,
   onAddPlayer,
   onRemovePlayer,
   newPlayerName,
@@ -78,6 +82,39 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
               placeholder='Enter number of overs (e.g., 5, 10, 20)'
               className={`w-full ${getGlassColor()} border ${getBorderColor()} rounded-lg px-4 py-2 ${getTextColor()} ${getPlaceholderColor()} focus:outline-none focus:ring-2 focus:ring-purple-300/50`}
             />
+          </div>
+        </div>
+
+        {/* Toss Configuration */}
+        <div className='mb-6'>
+          <div
+            className={`${getGlassColor()} backdrop-blur-md rounded-xl border ${getBorderColor()} p-6`}
+          >
+            <label className={`${getTextColorLight()} text-sm block mb-3`}>
+              Which team won the toss and chose to bat first?
+            </label>
+            <div className='grid grid-cols-2 gap-4'>
+              <button
+                onClick={() => onTossWinnerChange(1)}
+                className={`${
+                  tossWinner === 1
+                    ? 'bg-green-500/60 border-green-300/70 scale-105'
+                    : 'bg-purple-500/40 border-purple-300/50 hover:bg-purple-500/50'
+                } backdrop-blur-md border rounded-lg px-4 py-3 ${getTextColor()} font-semibold transition-all duration-200 hover:scale-105`}
+              >
+                {team1Name || 'Team 1'}
+              </button>
+              <button
+                onClick={() => onTossWinnerChange(2)}
+                className={`${
+                  tossWinner === 2
+                    ? 'bg-green-500/60 border-green-300/70 scale-105'
+                    : 'bg-purple-500/40 border-purple-300/50 hover:bg-purple-500/50'
+                } backdrop-blur-md border rounded-lg px-4 py-3 ${getTextColor()} font-semibold transition-all duration-200 hover:scale-105`}
+              >
+                {team2Name || 'Team 2'}
+              </button>
+            </div>
           </div>
         </div>
 

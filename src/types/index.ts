@@ -23,7 +23,14 @@ export type ThemeColor =
 export interface Ball {
   type: BallType;
   runs: number;
-  fielder?: string; // For wickets - who took the catch
+  fielder?: string; // For wickets - who took the catch/stumping/run out
+  dismissalType?:
+    | 'caught'
+    | 'bowled'
+    | 'lbw'
+    | 'run-out'
+    | 'stumped'
+    | 'hit-wicket'; // Type of dismissal
 }
 
 export interface PlayerStats {

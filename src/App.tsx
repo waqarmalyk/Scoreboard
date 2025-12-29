@@ -38,6 +38,10 @@ function App() {
   // Match setup state
   const [matchStarted, setMatchStarted] = useState(false);
   const [matchCompleted, setMatchCompleted] = useState(false);
+  const [tossWinner, setTossWinner] = useState<1 | 2 | null>(() => {
+    const saved = sessionStorage.getItem('tossWinner');
+    return saved ? (parseInt(saved) as 1 | 2) : null;
+  });
   const [team1Players, setTeam1Players] = useState<string[]>(() => {
     const saved = sessionStorage.getItem('team1Players');
     return saved ? JSON.parse(saved) : [];
@@ -120,17 +124,26 @@ function App() {
   const [totalBalls, setTotalBalls] = useState(0);
   const [maxBalls, setMaxBalls] = useState(0);
 
-  // History for undo functionality
-  const [lastAction, setLastAction] = useState<{
-    type: 'ball' | 'wicket';
-    ball: Ball;
-    batsmanName: string;
-    bowlerName: string;
-    onStrikeWas: 'striker' | 'non-striker';
-    batsmenStatsBefore: PlayerStats[];
-    bowlerStatsBefore: BowlerStats[];
-    fielderStatsBefore: FielderStats[];
-  } | null>(null);
+  // History for undo functionality (array to support multiple undos)
+  const [actionHistory, setActionHistory] = useState<
+    Array<{
+      type: 'ball' | 'wicket';
+      ball: Ball;
+      batsmanName: string;
+      bowlerName: string;
+      onStrikeWas: 'striker' | 'non-striker';
+      batsmenStatsBefore: PlayerStats[];
+      bowlerStatsBefore: BowlerStats[];
+      fielderStatsBefore: FielderStats[];
+      totalRunsBefore: number;
+      wicketsBefore: number;
+      extrasBefore: { wides: number; noBalls: number };
+      totalBallsBefore: number;
+      firstInningsBallsBefore: number;
+      currentOverBefore: Ball[];
+      allOversBefore: Ball[][];
+    }>
+  >([]);
 
   // Persist to sessionStorage
   useEffect(() => {
@@ -142,6 +155,9 @@ function App() {
     sessionStorage.setItem('team1Players', JSON.stringify(team1Players));
     sessionStorage.setItem('team2Players', JSON.stringify(team2Players));
     sessionStorage.setItem('matchOvers', matchOvers.toString());
+    if (tossWinner !== null) {
+      sessionStorage.setItem('tossWinner', tossWinner.toString());
+    }
   }, [
     team1Name,
     team2Name,
@@ -151,6 +167,7 @@ function App() {
     team1Players,
     team2Players,
     matchOvers,
+    tossWinner,
   ]);
 
   const addPlayerToTeam = (team: 1 | 2) => {
@@ -198,17 +215,33 @@ function App() {
       alert('Please set the number of overs for the match!');
       return;
     }
+    if (tossWinner === null) {
+      alert('Please select which team won the toss and chose to bat first!');
+      return;
+    }
     // Set maxBalls for first innings based on overs
     setMaxBalls(matchOvers * 6);
     setMatchStarted(true);
   };
 
   const getBattingTeamPlayers = () => {
-    return innings === 1 ? team1Players : team2Players;
+    // First innings: team that won toss bats
+    // Second innings: other team bats
+    if (innings === 1) {
+      return tossWinner === 1 ? team1Players : team2Players;
+    } else {
+      return tossWinner === 1 ? team2Players : team1Players;
+    }
   };
 
   const getBowlingTeamPlayers = () => {
-    return innings === 1 ? team2Players : team1Players;
+    // First innings: team that lost toss bowls
+    // Second innings: other team bowls
+    if (innings === 1) {
+      return tossWinner === 1 ? team2Players : team1Players;
+    } else {
+      return tossWinner === 1 ? team1Players : team2Players;
+    }
   };
 
   const updateBatsmanStats = (
@@ -364,6 +397,13 @@ function App() {
     const previousBatsmenStats = JSON.parse(JSON.stringify(batsmenStats));
     const previousBowlerStats = JSON.parse(JSON.stringify(bowlerStats));
     const previousFielderStats = JSON.parse(JSON.stringify(fielderStats));
+    const previousTotalRuns = totalRuns;
+    const previousWickets = wickets;
+    const previousExtras = JSON.parse(JSON.stringify(extras));
+    const previousTotalBalls = totalBalls;
+    const previousFirstInningsBalls = firstInningsBalls;
+    const previousCurrentOver = JSON.parse(JSON.stringify(currentOver));
+    const previousAllOvers = JSON.parse(JSON.stringify(allOvers));
 
     const newBall: Ball = { type, runs };
     const updatedOver = [...currentOver, newBall];
@@ -372,17 +412,27 @@ function App() {
     setTotalRuns(newTotalRuns);
     setCurrentOver(updatedOver);
 
-    // Save action for undo
-    setLastAction({
-      type: 'ball',
-      ball: newBall,
-      batsmanName,
-      bowlerName: currentBowler,
-      onStrikeWas: onStrike,
-      batsmenStatsBefore: previousBatsmenStats,
-      bowlerStatsBefore: previousBowlerStats,
-      fielderStatsBefore: previousFielderStats,
-    });
+    // Save action for undo - add to history array
+    setActionHistory([
+      ...actionHistory,
+      {
+        type: 'ball',
+        ball: newBall,
+        batsmanName,
+        bowlerName: currentBowler,
+        onStrikeWas: onStrike,
+        batsmenStatsBefore: previousBatsmenStats,
+        bowlerStatsBefore: previousBowlerStats,
+        fielderStatsBefore: previousFielderStats,
+        totalRunsBefore: previousTotalRuns,
+        wicketsBefore: previousWickets,
+        extrasBefore: previousExtras,
+        totalBallsBefore: previousTotalBalls,
+        firstInningsBallsBefore: previousFirstInningsBalls,
+        currentOverBefore: previousCurrentOver,
+        allOversBefore: previousAllOvers,
+      },
+    ]);
 
     // Update extras
     if (type === 'WD') {
@@ -555,17 +605,87 @@ function App() {
     const previousBatsmenStats = JSON.parse(JSON.stringify(batsmenStats));
     const previousBowlerStats = JSON.parse(JSON.stringify(bowlerStats));
     const previousFielderStats = JSON.parse(JSON.stringify(fielderStats));
+    const previousTotalRuns = totalRuns;
+    const previousWickets = wickets;
+    const previousExtras = JSON.parse(JSON.stringify(extras));
+    const previousTotalBalls = totalBalls;
+    const previousFirstInningsBalls = firstInningsBalls;
+    const previousCurrentOver = JSON.parse(JSON.stringify(currentOver));
+    const previousAllOvers = JSON.parse(JSON.stringify(allOvers));
 
     // Get fielding team players
     const fieldingTeamPlayers = getBowlingTeamPlayers();
 
-    // Prompt for fielder who took the catch - keep prompting until valid input
+    // First, ask for dismissal type
+    const dismissalOptions = [
+      'Caught',
+      'Bowled',
+      'LBW',
+      'Run Out',
+      'Stumped',
+      'Hit Wicket',
+    ];
+    let dismissalType:
+      | 'caught'
+      | 'bowled'
+      | 'lbw'
+      | 'run-out'
+      | 'stumped'
+      | 'hit-wicket'
+      | null = null;
+
+    let validDismissalType = false;
+    while (!validDismissalType) {
+      const dismissalPrompt = `How was the batsman dismissed?\n\n${dismissalOptions
+        .map((d, i) => `${i + 1}. ${d}`)
+        .join('\n')}\n\nEnter number (1-${dismissalOptions.length}):`;
+      const dismissalInput = window.prompt(dismissalPrompt);
+
+      // If user cancels, exit without recording wicket
+      if (dismissalInput === null) {
+        return;
+      }
+
+      if (dismissalInput) {
+        const dismissalIndex = parseInt(dismissalInput.trim()) - 1;
+        if (
+          !isNaN(dismissalIndex) &&
+          dismissalIndex >= 0 &&
+          dismissalIndex < dismissalOptions.length
+        ) {
+          const types: Array<
+            'caught' | 'bowled' | 'lbw' | 'run-out' | 'stumped' | 'hit-wicket'
+          > = ['caught', 'bowled', 'lbw', 'run-out', 'stumped', 'hit-wicket'];
+          dismissalType = types[dismissalIndex];
+          validDismissalType = true;
+        } else {
+          alert(
+            `Invalid selection! Please enter a number between 1 and ${dismissalOptions.length}`
+          );
+        }
+      } else {
+        alert('Please select a dismissal type!');
+      }
+    }
+
+    // Now ask for fielder name if needed (for caught, run-out, stumped)
     let fielderName = '';
-    if (fieldingTeamPlayers.length > 0) {
+    if (
+      dismissalType &&
+      ['caught', 'run-out', 'stumped'].includes(dismissalType) &&
+      fieldingTeamPlayers.length > 0
+    ) {
       let validInput = false;
 
+      const actionText =
+        dismissalType === 'caught'
+          ? 'took the catch'
+          : dismissalType === 'run-out'
+          ? 'effected the run out'
+          : 'stumped the batsman';
+
       while (!validInput) {
-        const fielderPrompt = `Who took the catch?\n\n${fieldingTeamPlayers
+        const fielderPrompt = `Who ${actionText}?\n\n${fieldingTeamPlayers
           .map((p, i) => `${i + 1}. ${p}`)
           .join('\n')}\n\nEnter number (1-${
           fieldingTeamPlayers.length
@@ -621,23 +741,34 @@ function App() {
       type: 'W',
       runs: 0,
       fielder: fielderName,
+      dismissalType: dismissalType!,
     };
     const updatedOver = [...currentOver, newBall];
 
     setWickets(wickets + 1);
     setCurrentOver(updatedOver);
 
-    // Save action for undo
-    setLastAction({
-      type: 'wicket',
-      ball: newBall,
-      batsmanName,
-      bowlerName: currentBowler,
-      onStrikeWas: onStrike,
-      batsmenStatsBefore: previousBatsmenStats,
-      bowlerStatsBefore: previousBowlerStats,
-      fielderStatsBefore: previousFielderStats,
-    });
+    // Save action for undo - add to history array
+    setActionHistory([
+      ...actionHistory,
+      {
+        type: 'wicket',
+        ball: newBall,
+        batsmanName,
+        bowlerName: currentBowler,
+        onStrikeWas: onStrike,
+        batsmenStatsBefore: previousBatsmenStats,
+        bowlerStatsBefore: previousBowlerStats,
+        fielderStatsBefore: previousFielderStats,
+        totalRunsBefore: previousTotalRuns,
+        wicketsBefore: previousWickets,
+        extrasBefore: previousExtras,
+        totalBallsBefore: previousTotalBalls,
+        firstInningsBallsBefore: previousFirstInningsBalls,
+        currentOverBefore: previousCurrentOver,
+        allOversBefore: previousAllOvers,
+      },
+    ]);
 
     setWickets(wickets + 1);
     setCurrentOver(updatedOver);
@@ -711,7 +842,9 @@ function App() {
     setAllOvers([]);
     setExtras({ wides: 0, noBalls: 0 });
     setTotalBalls(0);
-    setLastAction(null);
+    setActionHistory([]);
+    setTossWinner(null);
+    sessionStorage.removeItem('tossWinner');
 
     // Reset stats but keep teams
     setBatsmenStats([]);
@@ -750,8 +883,8 @@ function App() {
 
     // Set target (first innings + 1)
     setTarget(totalRuns + 1);
-    // Use the lesser of: match overs OR first innings balls (in case first innings ended early)
-    setMaxBalls(Math.min(matchOvers * 6, firstInningsBalls));
+    // Second innings always gets the full match overs allocation
+    setMaxBalls(matchOvers * 6);
     setTargetMode(true);
     setInnings(2);
 
@@ -762,7 +895,7 @@ function App() {
     setAllOvers([]);
     setExtras({ wides: 0, noBalls: 0 });
     setTotalBalls(0);
-    setLastAction(null);
+    setActionHistory([]);
 
     // Reset stats for second innings
     setBatsmenStats([]);
@@ -824,27 +957,28 @@ function App() {
   // };
 
   const undoLastBall = () => {
-    if (!lastAction) {
+    if (actionHistory.length === 0) {
       alert('Nothing to undo!');
       return;
     }
 
-    // Restore player stats from before the last action
+    // Get the last action from history
+    const lastAction = actionHistory[actionHistory.length - 1];
+
+    // Restore all state from before the last action
     setBatsmenStats(lastAction.batsmenStatsBefore);
     setBowlerStats(lastAction.bowlerStatsBefore);
     setFielderStats(lastAction.fielderStatsBefore);
+    setTotalRuns(lastAction.totalRunsBefore);
+    setWickets(lastAction.wicketsBefore);
+    setExtras(lastAction.extrasBefore);
+    setTotalBalls(lastAction.totalBallsBefore);
+    setFirstInningsBalls(lastAction.firstInningsBallsBefore);
+    setCurrentOver(lastAction.currentOverBefore);
+    setAllOvers(lastAction.allOversBefore);
 
-    // Get the ball to undo
-    const ballToUndo = lastAction.ball;
-
-    // Undo the runs
-    setTotalRuns(totalRuns - ballToUndo.runs);
-
-    // Undo wicket if applicable
-    if (ballToUndo.type === 'W') {
-      setWickets(wickets - 1);
-
-      // Restore the batsman who got out
+    // Restore the batsman who got out (if it was a wicket)
+    if (lastAction.ball.type === 'W') {
       if (lastAction.onStrikeWas === 'striker') {
         setCurrentBatsman(lastAction.batsmanName);
       } else {
@@ -852,63 +986,11 @@ function App() {
       }
     }
 
-    // Undo extras
-    if (ballToUndo.type === 'WD') {
-      setExtras({ ...extras, wides: extras.wides - ballToUndo.runs });
-    } else if (ballToUndo.type === 'NB') {
-      setExtras({ ...extras, noBalls: extras.noBalls - ballToUndo.runs });
-    }
+    // Restore strike if needed
+    setOnStrike(lastAction.onStrikeWas);
 
-    // Undo total balls count
-    const isLegal = ballToUndo.type !== 'WD' && ballToUndo.type !== 'NB';
-    if (isLegal) {
-      if (innings === 1) {
-        setFirstInningsBalls(Math.max(0, firstInningsBalls - 1));
-      } else {
-        setTotalBalls(Math.max(0, totalBalls - 1));
-      }
-    }
-
-    // Undo strike rotation if needed
-    if (isLegal && [1, 3, 5].includes(ballToUndo.runs)) {
-      setOnStrike(onStrike === 'striker' ? 'non-striker' : 'striker');
-    }
-
-    // Remove the ball from current over
-    if (currentOver.length > 0) {
-      setCurrentOver(currentOver.slice(0, -1));
-    } else if (allOvers.length > 0) {
-      // Ball was in a completed over, need to bring it back
-      const lastOver = allOvers[allOvers.length - 1];
-      const restoredOver = lastOver.slice(0, -1);
-
-      if (restoredOver.length > 0) {
-        setCurrentOver(restoredOver);
-        setAllOvers(allOvers.slice(0, -1));
-      } else {
-        // The over only had one ball, remove it completely
-        setAllOvers(allOvers.slice(0, -1));
-      }
-
-      // Undo end-of-over strike rotation
-      // Need to check what the last legal ball of that over was
-      const legalBalls = lastOver.filter(
-        (b) => b.type !== 'WD' && b.type !== 'NB'
-      );
-      if (legalBalls.length > 0) {
-        const lastLegalBall = legalBalls[legalBalls.length - 1];
-        const hadOddRuns = [1, 3, 5].includes(lastLegalBall.runs);
-
-        // Only undo the rotation if it actually happened
-        // (it happens when last ball had even runs)
-        if (!hadOddRuns) {
-          setOnStrike(onStrike === 'striker' ? 'non-striker' : 'striker');
-        }
-      }
-    }
-
-    // Clear last action
-    setLastAction(null);
+    // Remove the last action from history
+    setActionHistory(actionHistory.slice(0, -1));
   };
 
   const getBallDisplay = (ball: Ball) => {
@@ -1077,7 +1159,9 @@ function App() {
     setAllOvers([]);
     setExtras({ wides: 0, noBalls: 0 });
     setTotalBalls(0);
-    setLastAction(null);
+    setActionHistory([]);
+    setTossWinner(null);
+    sessionStorage.removeItem('tossWinner');
 
     // Clear innings stats
     setInnings1BatsmenStats([]);
@@ -1158,9 +1242,11 @@ function App() {
               team1Players={team1Players}
               team2Players={team2Players}
               matchOvers={matchOvers}
+              tossWinner={tossWinner}
               onTeam1NameChange={setTeam1Name}
               onTeam2NameChange={setTeam2Name}
               onMatchOversChange={setMatchOvers}
+              onTossWinnerChange={setTossWinner}
               onAddPlayer={addPlayerToTeam}
               onRemovePlayer={removePlayerFromTeam}
               newPlayerName={newPlayerName}
@@ -1205,6 +1291,7 @@ function App() {
                 team1Name={team1Name}
                 team2Name={team2Name}
                 innings={innings}
+                tossWinner={tossWinner}
                 onTeam1Change={setTeam1Name}
                 onTeam2Change={setTeam2Name}
                 getGlassColor={getGlassColor}
