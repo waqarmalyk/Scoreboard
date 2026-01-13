@@ -198,6 +198,51 @@ function App() {
     setAddingToTeam(null);
   };
 
+  const addPlayerToTeamByName = (team: 1 | 2, playerName: string) => {
+    const players = team === 1 ? team1Players : team2Players;
+
+    // Check if team already has 11 players
+    if (players.length >= 11) {
+      alert('Maximum 11 players allowed per team!');
+      return;
+    }
+
+    if (players.includes(playerName)) {
+      alert('Player already exists in this team!');
+      return;
+    }
+
+    if (team === 1) {
+      setTeam1Players([...team1Players, playerName]);
+    } else {
+      setTeam2Players([...team2Players, playerName]);
+    }
+  };
+
+  const swapPlayerBetweenTeams = (playerName: string, fromTeam: 1 | 2) => {
+    const toTeam = fromTeam === 1 ? 2 : 1;
+    const toPlayers = toTeam === 1 ? team1Players : team2Players;
+
+    // Check if destination team already has 11 players
+    if (toPlayers.length >= 11) {
+      alert(
+        `Cannot swap! ${
+          toTeam === 1 ? team1Name : team2Name
+        } already has maximum 11 players.`
+      );
+      return;
+    }
+
+    // Remove from source team and add to destination team
+    if (fromTeam === 1) {
+      setTeam1Players(team1Players.filter((p) => p !== playerName));
+      setTeam2Players([...team2Players, playerName]);
+    } else {
+      setTeam2Players(team2Players.filter((p) => p !== playerName));
+      setTeam1Players([...team1Players, playerName]);
+    }
+  };
+
   const removePlayerFromTeam = (team: 1 | 2, playerName: string) => {
     if (team === 1) {
       setTeam1Players(team1Players.filter((p) => p !== playerName));
@@ -1248,6 +1293,8 @@ function App() {
               onMatchOversChange={setMatchOvers}
               onTossWinnerChange={setTossWinner}
               onAddPlayer={addPlayerToTeam}
+              onAddPlayerByName={addPlayerToTeamByName}
+              onSwapPlayer={swapPlayerBetweenTeams}
               onRemovePlayer={removePlayerFromTeam}
               newPlayerName={newPlayerName}
               onNewPlayerNameChange={setNewPlayerName}

@@ -1,3 +1,37 @@
+// Predefined list of players
+const PREDEFINED_PLAYERS = [
+  'Atir',
+  'Nakkash',
+  'WaqarA',
+  'WaqarD',
+  'HamzaR',
+  'AliHamza',
+  'AliA',
+  'Naseer',
+  'Qadeer',
+  'Nasrullah',
+  'ShehzadD',
+  'Haseeb',
+  'Hassan',
+  'Zerfi',
+  'Kamran',
+  'Saim',
+  'Subhan',
+  'Ihtisham',
+  'Rohaan',
+  'Adil',
+  'Daud',
+  'Waleed',
+  'Ahmed',
+  'Haris',
+  'Abdullah',
+  'Ibrahim',
+  'Zarrar',
+  'Zrbab',
+  'AbdulWahab',
+  'Taiyab',
+];
+
 interface PlayerSetupProps {
   team1Name: string;
   team2Name: string;
@@ -10,6 +44,8 @@ interface PlayerSetupProps {
   onMatchOversChange: (overs: number) => void;
   onTossWinnerChange: (team: 1 | 2 | null) => void;
   onAddPlayer: (team: 1 | 2) => void;
+  onAddPlayerByName: (team: 1 | 2, playerName: string) => void;
+  onSwapPlayer: (playerName: string, fromTeam: 1 | 2) => void;
   onRemovePlayer: (team: 1 | 2, playerName: string) => void;
   newPlayerName: string;
   onNewPlayerNameChange: (name: string) => void;
@@ -35,6 +71,8 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
   onMatchOversChange,
   onTossWinnerChange,
   onAddPlayer,
+  onAddPlayerByName,
+  onSwapPlayer,
   onRemovePlayer,
   newPlayerName,
   onNewPlayerNameChange,
@@ -47,6 +85,11 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
   getBorderColor,
   getPlaceholderColor,
 }) => {
+  // Filter out players already in teams
+  const availablePlayers = PREDEFINED_PLAYERS.filter(
+    (player) => !team1Players.includes(player) && !team2Players.includes(player)
+  );
+
   return (
     <div className='w-full max-w-6xl'>
       <div
@@ -118,6 +161,49 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
           </div>
         </div>
 
+        {/* Predefined Players List */}
+        {availablePlayers.length > 0 && (
+          <div className='mb-6'>
+            <div
+              className={`${getGlassColor()} backdrop-blur-md rounded-xl border ${getBorderColor()} p-6`}
+            >
+              <h3 className={`text-lg font-semibold ${getTextColor()} mb-3`}>
+                Available Players ({availablePlayers.length})
+              </h3>
+              <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 max-h-60 overflow-y-auto'>
+                {availablePlayers.map((player) => (
+                  <div
+                    key={player}
+                    className={`${getGlassColor()} border ${getBorderColor()} rounded-lg p-2`}
+                  >
+                    <div
+                      className={`text-sm ${getTextColor()} mb-1 text-center font-medium`}
+                    >
+                      {player}
+                    </div>
+                    <div className='flex gap-1'>
+                      <button
+                        onClick={() => onAddPlayerByName(1, player)}
+                        className='flex-1 bg-blue-500/50 hover:bg-blue-500/70 rounded px-1 py-1 text-white text-xs font-semibold transition-all'
+                        title={`Add to ${team1Name || 'Team 1'}`}
+                      >
+                        T1
+                      </button>
+                      <button
+                        onClick={() => onAddPlayerByName(2, player)}
+                        className='flex-1 bg-green-500/50 hover:bg-green-500/70 rounded px-1 py-1 text-white text-xs font-semibold transition-all'
+                        title={`Add to ${team2Name || 'Team 2'}`}
+                      >
+                        T2
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
           {/* Team 1 Setup */}
           <div
@@ -147,12 +233,21 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                   className={`flex items-center justify-between ${getGlassColor()} rounded-lg px-3 py-2 border ${getBorderColor()}`}
                 >
                   <span className={getTextColor()}>{player}</span>
-                  <button
-                    onClick={() => onRemovePlayer(1, player)}
-                    className='text-red-400 hover:text-red-300 font-bold'
-                  >
-                    ✕
-                  </button>
+                  <div className='flex gap-2'>
+                    <button
+                      onClick={() => onSwapPlayer(player, 1)}
+                      className='text-blue-400 hover:text-blue-300 font-bold text-sm'
+                      title='Swap to Team 2'
+                    >
+                      ⇄
+                    </button>
+                    <button
+                      onClick={() => onRemovePlayer(1, player)}
+                      className='text-red-400 hover:text-red-300 font-bold'
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -219,12 +314,21 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                   className={`flex items-center justify-between ${getGlassColor()} rounded-lg px-3 py-2 border ${getBorderColor()}`}
                 >
                   <span className={getTextColor()}>{player}</span>
-                  <button
-                    onClick={() => onRemovePlayer(2, player)}
-                    className='text-red-400 hover:text-red-300 font-bold'
-                  >
-                    ✕
-                  </button>
+                  <div className='flex gap-2'>
+                    <button
+                      onClick={() => onSwapPlayer(player, 2)}
+                      className='text-blue-400 hover:text-blue-300 font-bold text-sm'
+                      title='Swap to Team 1'
+                    >
+                      ⇄
+                    </button>
+                    <button
+                      onClick={() => onRemovePlayer(2, player)}
+                      className='text-red-400 hover:text-red-300 font-bold'
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
