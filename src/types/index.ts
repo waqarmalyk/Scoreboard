@@ -39,6 +39,7 @@ export interface PlayerStats {
   balls: number;
   fours: number;
   sixes: number;
+  dotBalls: number;
   innings: number;
 }
 

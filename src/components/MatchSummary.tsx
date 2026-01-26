@@ -80,13 +80,13 @@ export const MatchSummary: React.FC<MatchSummaryProps> = ({
       pdf.text(
         `${team1Name}: ${team1Score}/${team1Wickets} (${team1Overs} overs)`,
         20,
-        yPosition
+        yPosition,
       );
       yPosition += 6;
       pdf.text(
         `${team2Name}: ${team2Score}/${team2Wickets} (${team2Overs} overs)`,
         20,
-        yPosition
+        yPosition,
       );
       yPosition += 12;
 
@@ -100,7 +100,7 @@ export const MatchSummary: React.FC<MatchSummaryProps> = ({
       pdf.text(
         `${manOfTheMatch.name} - ${manOfTheMatch.reason}`,
         20,
-        yPosition
+        yPosition,
       );
       yPosition += 15;
 
@@ -476,7 +476,7 @@ export const MatchSummary: React.FC<MatchSummaryProps> = ({
       link.setAttribute('href', url);
       link.setAttribute(
         'download',
-        `${team1Name}_vs_${team2Name}_formatted_for_Stats_Indoor_INPUT.csv`
+        `${team1Name}_vs_${team2Name}_formatted_for_Stats_Indoor_INPUT.csv`,
       );
       link.style.visibility = 'hidden';
       document.body.appendChild(link);
@@ -556,6 +556,7 @@ export const MatchSummary: React.FC<MatchSummaryProps> = ({
                 <th className='text-center py-2'>B</th>
                 <th className='text-center py-2'>4s</th>
                 <th className='text-center py-2'>6s</th>
+                <th className='text-center py-2'>Dots</th>
                 <th className='text-center py-2'>SR</th>
               </tr>
             </thead>
@@ -567,6 +568,7 @@ export const MatchSummary: React.FC<MatchSummaryProps> = ({
                   <td className='text-center'>{batsman.balls}</td>
                   <td className='text-center'>{batsman.fours}</td>
                   <td className='text-center'>{batsman.sixes}</td>
+                  <td className='text-center'>{batsman.dotBalls}</td>
                   <td className='text-center'>
                     {batsman.balls > 0
                       ? ((batsman.runs / batsman.balls) * 100).toFixed(1)
@@ -670,6 +672,7 @@ export const MatchSummary: React.FC<MatchSummaryProps> = ({
                 <th className='text-center py-2'>B</th>
                 <th className='text-center py-2'>4s</th>
                 <th className='text-center py-2'>6s</th>
+                <th className='text-center py-2'>Dots</th>
                 <th className='text-center py-2'>SR</th>
               </tr>
             </thead>
@@ -681,6 +684,7 @@ export const MatchSummary: React.FC<MatchSummaryProps> = ({
                   <td className='text-center'>{batsman.balls}</td>
                   <td className='text-center'>{batsman.fours}</td>
                   <td className='text-center'>{batsman.sixes}</td>
+                  <td className='text-center'>{batsman.dotBalls}</td>
                   <td className='text-center'>
                     {batsman.balls > 0
                       ? ((batsman.runs / batsman.balls) * 100).toFixed(1)

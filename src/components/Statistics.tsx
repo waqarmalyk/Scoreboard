@@ -46,13 +46,14 @@ export const Statistics: React.FC<StatisticsProps> = ({
                     </h3>
                     <div className='overflow-x-auto'>
                       <div
-                        className={`grid grid-cols-7 gap-2 ${getTextColorLight()} text-sm font-semibold mb-2 pb-2 border-b ${getBorderColor()}`}
+                        className={`grid grid-cols-8 gap-2 ${getTextColorLight()} text-sm font-semibold mb-2 pb-2 border-b ${getBorderColor()}`}
                       >
                         <span className='col-span-2'>Batsman</span>
                         <span className='text-center'>Runs</span>
                         <span className='text-center'>Balls</span>
                         <span className='text-center'>4s</span>
                         <span className='text-center'>6s</span>
+                        <span className='text-center'>Dots</span>
                         <span className='text-center'>SR</span>
                       </div>
                       {batsmenStats
@@ -60,7 +61,7 @@ export const Statistics: React.FC<StatisticsProps> = ({
                         .map((batsman, index) => (
                           <div
                             key={index}
-                            className={`grid grid-cols-7 gap-2 ${getTextColor()} py-2 border-b ${
+                            className={`grid grid-cols-8 gap-2 ${getTextColor()} py-2 border-b ${
                               theme === 'white'
                                 ? 'border-gray-900/10'
                                 : 'border-white/10'
@@ -73,6 +74,9 @@ export const Statistics: React.FC<StatisticsProps> = ({
                             <span className='text-center'>{batsman.balls}</span>
                             <span className='text-center'>{batsman.fours}</span>
                             <span className='text-center'>{batsman.sixes}</span>
+                            <span className='text-center'>
+                              {batsman.dotBalls}
+                            </span>
                             <span className='text-center'>
                               {batsman.balls > 0
                                 ? (
@@ -144,7 +148,7 @@ export const Statistics: React.FC<StatisticsProps> = ({
                 )}
               </div>
             </div>
-          )
+          ),
       )}
     </div>
   );

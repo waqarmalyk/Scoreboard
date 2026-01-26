@@ -36,8 +36,14 @@ function App() {
   } = useTheme();
 
   // Match setup state
-  const [matchStarted, setMatchStarted] = useState(false);
-  const [matchCompleted, setMatchCompleted] = useState(false);
+  const [matchStarted, setMatchStarted] = useState(() => {
+    const saved = sessionStorage.getItem('matchStarted');
+    return saved ? JSON.parse(saved) : false;
+  });
+  const [matchCompleted, setMatchCompleted] = useState(() => {
+    const saved = sessionStorage.getItem('matchCompleted');
+    return saved ? JSON.parse(saved) : false;
+  });
   const [tossWinner, setTossWinner] = useState<1 | 2 | null>(() => {
     const saved = sessionStorage.getItem('tossWinner');
     return saved ? (parseInt(saved) as 1 | 2) : null;
@@ -55,17 +61,27 @@ function App() {
 
   // Load from sessionStorage or use defaults
   const [team1Name, setTeam1Name] = useState(
-    () => sessionStorage.getItem('team1Name') || 'Team 1'
+    () => sessionStorage.getItem('team1Name') || 'Team 1',
   );
   const [team2Name, setTeam2Name] = useState(
-    () => sessionStorage.getItem('team2Name') || 'Team 2'
+    () => sessionStorage.getItem('team2Name') || 'Team 2',
   );
-  const [currentBatsman, setCurrentBatsman] = useState('');
-  const [nonStriker, setNonStriker] = useState('');
-  const [onStrike, setOnStrike] = useState<'striker' | 'non-striker'>(
-    'striker'
-  );
-  const [currentBowler, setCurrentBowler] = useState('');
+  const [currentBatsman, setCurrentBatsman] = useState(() => {
+    const saved = sessionStorage.getItem('currentBatsman');
+    return saved || '';
+  });
+  const [nonStriker, setNonStriker] = useState(() => {
+    const saved = sessionStorage.getItem('nonStriker');
+    return saved || '';
+  });
+  const [onStrike, setOnStrike] = useState<'striker' | 'non-striker'>(() => {
+    const saved = sessionStorage.getItem('onStrike');
+    return (saved as 'striker' | 'non-striker') || 'striker';
+  });
+  const [currentBowler, setCurrentBowler] = useState(() => {
+    const saved = sessionStorage.getItem('currentBowler');
+    return saved || '';
+  });
 
   // Player statistics
   const [batsmenStats, setBatsmenStats] = useState<PlayerStats[]>(() => {
@@ -81,36 +97,81 @@ function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  const [totalRuns, setTotalRuns] = useState(0);
-  const [wickets, setWickets] = useState(0);
-  const [currentOver, setCurrentOver] = useState<Ball[]>([]);
-  const [allOvers, setAllOvers] = useState<Ball[][]>([]);
-  const [extras, setExtras] = useState({
-    wides: 0,
-    noBalls: 0,
+  const [totalRuns, setTotalRuns] = useState(() => {
+    const saved = sessionStorage.getItem('totalRuns');
+    return saved ? parseInt(saved) : 0;
+  });
+  const [wickets, setWickets] = useState(() => {
+    const saved = sessionStorage.getItem('wickets');
+    return saved ? parseInt(saved) : 0;
+  });
+  const [currentOver, setCurrentOver] = useState<Ball[]>(() => {
+    const saved = sessionStorage.getItem('currentOver');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [allOvers, setAllOvers] = useState<Ball[][]>(() => {
+    const saved = sessionStorage.getItem('allOvers');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [extras, setExtras] = useState(() => {
+    const saved = sessionStorage.getItem('extras');
+    return saved ? JSON.parse(saved) : { wides: 0, noBalls: 0 };
   });
 
   // Innings management
-  const [innings, setInnings] = useState<1 | 2>(1);
-  const [firstInningsBalls, setFirstInningsBalls] = useState(0);
+  const [innings, setInnings] = useState<1 | 2>(() => {
+    const saved = sessionStorage.getItem('innings');
+    return saved ? (parseInt(saved) as 1 | 2) : 1;
+  });
+  const [firstInningsBalls, setFirstInningsBalls] = useState(() => {
+    const saved = sessionStorage.getItem('firstInningsBalls');
+    return saved ? parseInt(saved) : 0;
+  });
 
   // Saved stats from innings
   const [innings1BatsmenStats, setInnings1BatsmenStats] = useState<
     PlayerStats[]
-  >([]);
+  >(() => {
+    const saved = sessionStorage.getItem('innings1BatsmenStats');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [innings1BowlerStats, setInnings1BowlerStats] = useState<BowlerStats[]>(
-    []
+    () => {
+      const saved = sessionStorage.getItem('innings1BowlerStats');
+      return saved ? JSON.parse(saved) : [];
+    },
   );
   const [innings1FielderStats, setInnings1FielderStats] = useState<
     FielderStats[]
-  >([]);
-  const [innings1Score, setInnings1Score] = useState(0);
-  const [innings1Wickets, setInnings1Wickets] = useState(0);
-  const [innings1Overs, setInnings1Overs] = useState('');
+  >(() => {
+    const saved = sessionStorage.getItem('innings1FielderStats');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [innings1Score, setInnings1Score] = useState(() => {
+    const saved = sessionStorage.getItem('innings1Score');
+    return saved ? parseInt(saved) : 0;
+  });
+  const [innings1Wickets, setInnings1Wickets] = useState(() => {
+    const saved = sessionStorage.getItem('innings1Wickets');
+    return saved ? parseInt(saved) : 0;
+  });
+  const [innings1Overs, setInnings1Overs] = useState(() => {
+    const saved = sessionStorage.getItem('innings1Overs');
+    return saved || '';
+  });
 
-  const [innings2Score, setInnings2Score] = useState(0);
-  const [innings2Wickets, setInnings2Wickets] = useState(0);
-  const [innings2Overs, setInnings2Overs] = useState('');
+  const [innings2Score, setInnings2Score] = useState(() => {
+    const saved = sessionStorage.getItem('innings2Score');
+    return saved ? parseInt(saved) : 0;
+  });
+  const [innings2Wickets, setInnings2Wickets] = useState(() => {
+    const saved = sessionStorage.getItem('innings2Wickets');
+    return saved ? parseInt(saved) : 0;
+  });
+  const [innings2Overs, setInnings2Overs] = useState(() => {
+    const saved = sessionStorage.getItem('innings2Overs');
+    return saved || '';
+  });
 
   // Match configuration
   const [matchOvers, setMatchOvers] = useState(() => {
@@ -119,10 +180,22 @@ function App() {
   });
 
   // Target mode state
-  const [targetMode, setTargetMode] = useState(false);
-  const [target, setTarget] = useState(0);
-  const [totalBalls, setTotalBalls] = useState(0);
-  const [maxBalls, setMaxBalls] = useState(0);
+  const [targetMode, setTargetMode] = useState(() => {
+    const saved = sessionStorage.getItem('targetMode');
+    return saved ? JSON.parse(saved) : false;
+  });
+  const [target, setTarget] = useState(() => {
+    const saved = sessionStorage.getItem('target');
+    return saved ? parseInt(saved) : 0;
+  });
+  const [totalBalls, setTotalBalls] = useState(() => {
+    const saved = sessionStorage.getItem('totalBalls');
+    return saved ? parseInt(saved) : 0;
+  });
+  const [maxBalls, setMaxBalls] = useState(() => {
+    const saved = sessionStorage.getItem('maxBalls');
+    return saved ? parseInt(saved) : 0;
+  });
 
   // History for undo functionality (array to support multiple undos)
   const [actionHistory, setActionHistory] = useState<
@@ -155,6 +228,41 @@ function App() {
     sessionStorage.setItem('team1Players', JSON.stringify(team1Players));
     sessionStorage.setItem('team2Players', JSON.stringify(team2Players));
     sessionStorage.setItem('matchOvers', matchOvers.toString());
+    sessionStorage.setItem('currentBatsman', currentBatsman);
+    sessionStorage.setItem('nonStriker', nonStriker);
+    sessionStorage.setItem('onStrike', onStrike);
+    sessionStorage.setItem('currentBowler', currentBowler);
+    sessionStorage.setItem('totalRuns', totalRuns.toString());
+    sessionStorage.setItem('wickets', wickets.toString());
+    sessionStorage.setItem('currentOver', JSON.stringify(currentOver));
+    sessionStorage.setItem('allOvers', JSON.stringify(allOvers));
+    sessionStorage.setItem('extras', JSON.stringify(extras));
+    sessionStorage.setItem('innings', innings.toString());
+    sessionStorage.setItem('firstInningsBalls', firstInningsBalls.toString());
+    sessionStorage.setItem(
+      'innings1BatsmenStats',
+      JSON.stringify(innings1BatsmenStats),
+    );
+    sessionStorage.setItem(
+      'innings1BowlerStats',
+      JSON.stringify(innings1BowlerStats),
+    );
+    sessionStorage.setItem(
+      'innings1FielderStats',
+      JSON.stringify(innings1FielderStats),
+    );
+    sessionStorage.setItem('innings1Score', innings1Score.toString());
+    sessionStorage.setItem('innings1Wickets', innings1Wickets.toString());
+    sessionStorage.setItem('innings1Overs', innings1Overs);
+    sessionStorage.setItem('innings2Score', innings2Score.toString());
+    sessionStorage.setItem('innings2Wickets', innings2Wickets.toString());
+    sessionStorage.setItem('innings2Overs', innings2Overs);
+    sessionStorage.setItem('targetMode', JSON.stringify(targetMode));
+    sessionStorage.setItem('target', target.toString());
+    sessionStorage.setItem('totalBalls', totalBalls.toString());
+    sessionStorage.setItem('maxBalls', maxBalls.toString());
+    sessionStorage.setItem('matchStarted', JSON.stringify(matchStarted));
+    sessionStorage.setItem('matchCompleted', JSON.stringify(matchCompleted));
     if (tossWinner !== null) {
       sessionStorage.setItem('tossWinner', tossWinner.toString());
     }
@@ -168,6 +276,32 @@ function App() {
     team2Players,
     matchOvers,
     tossWinner,
+    currentBatsman,
+    nonStriker,
+    onStrike,
+    currentBowler,
+    totalRuns,
+    wickets,
+    currentOver,
+    allOvers,
+    extras,
+    innings,
+    firstInningsBalls,
+    innings1BatsmenStats,
+    innings1BowlerStats,
+    innings1FielderStats,
+    innings1Score,
+    innings1Wickets,
+    innings1Overs,
+    innings2Score,
+    innings2Wickets,
+    innings2Overs,
+    targetMode,
+    target,
+    totalBalls,
+    maxBalls,
+    matchStarted,
+    matchCompleted,
   ]);
 
   const addPlayerToTeam = (team: 1 | 2) => {
@@ -228,7 +362,7 @@ function App() {
       alert(
         `Cannot swap! ${
           toTeam === 1 ? team1Name : team2Name
-        } already has maximum 11 players.`
+        } already has maximum 11 players.`,
       );
       return;
     }
@@ -292,12 +426,13 @@ function App() {
   const updateBatsmanStats = (
     runs: number,
     isFour: boolean,
-    isSix: boolean
+    isSix: boolean,
   ) => {
     const activeBatsman = onStrike === 'striker' ? currentBatsman : nonStriker;
     const existingBatsman = batsmenStats.find(
-      (b) => b.name === activeBatsman && b.innings === innings
+      (b) => b.name === activeBatsman && b.innings === innings,
     );
+    const isDotBall = runs === 0;
     if (existingBatsman) {
       setBatsmenStats(
         batsmenStats.map((b) =>
@@ -308,9 +443,10 @@ function App() {
                 balls: b.balls + 1,
                 fours: b.fours + (isFour ? 1 : 0),
                 sixes: b.sixes + (isSix ? 1 : 0),
+                dotBalls: b.dotBalls + (isDotBall ? 1 : 0),
               }
-            : b
-        )
+            : b,
+        ),
       );
     } else {
       setBatsmenStats([
@@ -321,6 +457,7 @@ function App() {
           balls: 1,
           fours: isFour ? 1 : 0,
           sixes: isSix ? 1 : 0,
+          dotBalls: isDotBall ? 1 : 0,
           innings: innings,
         },
       ]);
@@ -331,10 +468,10 @@ function App() {
     runs: number,
     isWicket: boolean,
     isLegal: boolean,
-    ballType: BallType
+    ballType: BallType,
   ) => {
     const existingBowler = bowlerStats.find(
-      (b) => b.name === currentBowler && b.innings === innings
+      (b) => b.name === currentBowler && b.innings === innings,
     );
     if (existingBowler) {
       const newBalls = existingBowler.balls + (isLegal ? 1 : 0);
@@ -350,8 +487,8 @@ function App() {
                 wides: b.wides + (ballType === 'WD' ? 1 : 0),
                 noBalls: b.noBalls + (ballType === 'NB' ? 1 : 0),
               }
-            : b
-        )
+            : b,
+        ),
       );
     } else {
       setBowlerStats([
@@ -372,15 +509,15 @@ function App() {
 
   const updateFielderStats = (fielderName: string) => {
     const existingFielder = fielderStats.find(
-      (f) => f.name === fielderName && f.innings === innings
+      (f) => f.name === fielderName && f.innings === innings,
     );
     if (existingFielder) {
       setFielderStats(
         fielderStats.map((f) =>
           f.name === fielderName && f.innings === innings
             ? { ...f, catches: f.catches + 1 }
-            : f
-        )
+            : f,
+        ),
       );
     } else {
       setFielderStats([
@@ -397,12 +534,12 @@ function App() {
   const addBall = (type: BallType, runs: number, batsmanRuns?: number) => {
     // Check if current over is already complete (6 legal balls)
     const currentLegalBalls = currentOver.filter(
-      (b) => b.type !== 'WD' && b.type !== 'NB'
+      (b) => b.type !== 'WD' && b.type !== 'NB',
     ).length;
 
     if (currentLegalBalls >= 6) {
       alert(
-        'Over is complete! Please wait for the new over to start or refresh if stuck.'
+        'Over is complete! Please wait for the new over to start or refresh if stuck.',
       );
       return;
     }
@@ -428,7 +565,7 @@ function App() {
       const lastBowler = bowlerStats[bowlerStats.length - 1]?.name;
       if (lastBowler && currentBowler === lastBowler) {
         const confirmSameBowler = window.confirm(
-          `Continue with same bowler (${currentBowler})? Click Cancel to change bowler.`
+          `Continue with same bowler (${currentBowler})? Click Cancel to change bowler.`,
         );
         if (!confirmSameBowler) {
           alert('Please update the bowler name before starting the new over!');
@@ -558,7 +695,7 @@ function App() {
         if (newFirstInningsBalls >= maxBalls) {
           setTimeout(() => {
             alert(
-              'Overs completed! Click "Start 2nd Innings" to begin the chase.'
+              'Overs completed! Click "Start 2nd Innings" to begin the chase.',
             );
           }, 500);
         }
@@ -572,7 +709,7 @@ function App() {
           setInnings2Score(newTotalRuns);
           setInnings2Wickets(wickets);
           setInnings2Overs(
-            `${Math.floor(newTotalBalls / 6)}.${newTotalBalls % 6}`
+            `${Math.floor(newTotalBalls / 6)}.${newTotalBalls % 6}`,
           );
 
           setTimeout(() => {
@@ -585,7 +722,7 @@ function App() {
 
     // Complete over after 6 legal balls (excluding wides and no-balls)
     const legalBalls = updatedOver.filter(
-      (b) => b.type !== 'WD' && b.type !== 'NB'
+      (b) => b.type !== 'WD' && b.type !== 'NB',
     );
     if (legalBalls.length === 6) {
       // Delay moving to next over so user can see the 6th ball
@@ -605,12 +742,12 @@ function App() {
   const addWicket = () => {
     // Check if current over is already complete (6 legal balls)
     const currentLegalBalls = currentOver.filter(
-      (b) => b.type !== 'WD' && b.type !== 'NB'
+      (b) => b.type !== 'WD' && b.type !== 'NB',
     ).length;
 
     if (currentLegalBalls >= 6) {
       alert(
-        'Over is complete! Please wait for the new over to start or refresh if stuck.'
+        'Over is complete! Please wait for the new over to start or refresh if stuck.',
       );
       return;
     }
@@ -636,7 +773,7 @@ function App() {
       const lastBowler = bowlerStats[bowlerStats.length - 1]?.name;
       if (lastBowler && currentBowler === lastBowler) {
         const confirmSameBowler = window.confirm(
-          `Continue with same bowler (${currentBowler})? Click Cancel to change bowler.`
+          `Continue with same bowler (${currentBowler})? Click Cancel to change bowler.`,
         );
         if (!confirmSameBowler) {
           alert('Please update the bowler name before starting the new over!');
@@ -665,7 +802,6 @@ function App() {
     const dismissalOptions = [
       'Caught',
       'Bowled',
-      'LBW',
       'Run Out',
       'Stumped',
       'Hit Wicket',
@@ -673,7 +809,6 @@ function App() {
     let dismissalType:
       | 'caught'
       | 'bowled'
-      | 'lbw'
       | 'run-out'
       | 'stumped'
       | 'hit-wicket'
@@ -699,13 +834,13 @@ function App() {
           dismissalIndex < dismissalOptions.length
         ) {
           const types: Array<
-            'caught' | 'bowled' | 'lbw' | 'run-out' | 'stumped' | 'hit-wicket'
-          > = ['caught', 'bowled', 'lbw', 'run-out', 'stumped', 'hit-wicket'];
+            'caught' | 'bowled' | 'run-out' | 'stumped' | 'hit-wicket'
+          > = ['caught', 'bowled', 'run-out', 'stumped', 'hit-wicket'];
           dismissalType = types[dismissalIndex];
           validDismissalType = true;
         } else {
           alert(
-            `Invalid selection! Please enter a number between 1 and ${dismissalOptions.length}`
+            `Invalid selection! Please enter a number between 1 and ${dismissalOptions.length}`,
           );
         }
       } else {
@@ -726,8 +861,8 @@ function App() {
         dismissalType === 'caught'
           ? 'took the catch'
           : dismissalType === 'run-out'
-          ? 'effected the run out'
-          : 'stumped the batsman';
+            ? 'effected the run out'
+            : 'stumped the batsman';
 
       while (!validInput) {
         const fielderPrompt = `Who ${actionText}?\n\n${fieldingTeamPlayers
@@ -767,7 +902,7 @@ function App() {
               validInput = true;
             } else {
               alert(
-                `Invalid selection! Please enter a number between 1 and ${fieldingTeamPlayers.length}`
+                `Invalid selection! Please enter a number between 1 and ${fieldingTeamPlayers.length}`,
               );
               // Continue loop to re-prompt
             }
@@ -867,7 +1002,7 @@ function App() {
 
     // Complete over after 6 legal balls
     const legalBalls = updatedOver.filter(
-      (b) => b.type !== 'WD' && b.type !== 'NB'
+      (b) => b.type !== 'WD' && b.type !== 'NB',
     );
     if (legalBalls.length === 6) {
       // Delay moving to next over so user can see the 6th ball
@@ -959,7 +1094,7 @@ function App() {
     // Prompt user to set new players
     setTimeout(() => {
       alert(
-        '⚠️ 2nd Innings Started! Please select the new batsmen and bowler before scoring.'
+        '⚠️ 2nd Innings Started! Please select the new batsmen and bowler before scoring.',
       );
     }, 100);
   };
@@ -1115,7 +1250,15 @@ function App() {
     // Find player with highest points
     const topBatsman = batsmenWithPoints.reduce(
       (prev, current) => (current.points > prev.points ? current : prev),
-      { name: '', runs: 0, balls: 0, fours: 0, sixes: 0, innings: 1, points: 0 }
+      {
+        name: '',
+        runs: 0,
+        balls: 0,
+        fours: 0,
+        sixes: 0,
+        innings: 1,
+        points: 0,
+      },
     );
 
     const topBowler = bowlersWithPoints.reduce(
@@ -1130,7 +1273,7 @@ function App() {
         points: 0,
         wides: 0,
         noBalls: 0,
-      }
+      },
     );
 
     // Compare and select MOTM
@@ -1190,6 +1333,9 @@ function App() {
   };
 
   const handleNewMatchFromSummary = () => {
+    // Clear all session storage when starting a new match
+    sessionStorage.clear();
+
     // Reset all match state
     setMatchCompleted(false);
     setMatchStarted(false);
@@ -1206,11 +1352,11 @@ function App() {
     setTotalBalls(0);
     setActionHistory([]);
     setTossWinner(null);
-    sessionStorage.removeItem('tossWinner');
 
     // Clear innings stats
     setInnings1BatsmenStats([]);
     setInnings1BowlerStats([]);
+    setInnings1FielderStats([]);
     setInnings1Score(0);
     setInnings1Wickets(0);
     setInnings1Overs('');
@@ -1222,9 +1368,6 @@ function App() {
     setBatsmenStats([]);
     setBowlerStats([]);
     setFielderStats([]);
-    sessionStorage.removeItem('batsmenStats');
-    sessionStorage.removeItem('bowlerStats');
-    sessionStorage.removeItem('fielderStats');
 
     // Reset player selections
     setCurrentBatsman('');
@@ -1383,7 +1526,7 @@ function App() {
                 onNonStrikerChange={setNonStriker}
                 onStrikeToggle={() =>
                   setOnStrike(
-                    onStrike === 'striker' ? 'non-striker' : 'striker'
+                    onStrike === 'striker' ? 'non-striker' : 'striker',
                   )
                 }
                 availablePlayers={getBattingTeamPlayers()}
