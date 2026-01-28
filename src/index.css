@@ -19,12 +19,30 @@ html {
   .glass {
     @apply bg-white/10 backdrop-blur-xl border border-white/20;
   }
-  
+
   .glass-card {
     @apply bg-white/20 backdrop-blur-md border border-white/30;
   }
-  
+
   .glass-input {
     @apply bg-white/30 backdrop-blur-sm border border-white/40 text-white placeholder:text-white/60;
+  }
+
+  .animate-bounce-in {
+    animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
   }
 }

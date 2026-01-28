@@ -21,6 +21,7 @@ import { PreviousOvers } from './components/PreviousOvers';
 import { Statistics } from './components/Statistics';
 import { PlayerSetup } from './components/PlayerSetup';
 import { MatchSummary } from './components/MatchSummary';
+import { MilestonePopup } from './components/MilestonePopup';
 
 function App() {
   // Theme state
@@ -217,6 +218,13 @@ function App() {
       allOversBefore: Ball[][];
     }>
   >([]);
+
+  // Milestone popup state
+  const [milestone, setMilestone] = useState<{
+    playerName: string;
+    milestone: number;
+    type: 'batsman' | 'bowler';
+  } | null>(null);
 
   // Persist to sessionStorage
   useEffect(() => {
@@ -434,12 +442,26 @@ function App() {
     );
     const isDotBall = runs === 0;
     if (existingBatsman) {
+      const previousRuns = existingBatsman.runs;
+      const newRuns = previousRuns + runs;
+
+      // Check for milestones: 30, 50, 100
+      [30, 50, 100].forEach((milestone) => {
+        if (previousRuns < milestone && newRuns >= milestone) {
+          setMilestone({
+            playerName: activeBatsman,
+            milestone,
+            type: 'batsman',
+          });
+        }
+      });
+
       setBatsmenStats(
         batsmenStats.map((b) =>
           b.name === activeBatsman && b.innings === innings
             ? {
                 ...b,
-                runs: b.runs + runs,
+                runs: newRuns,
                 balls: b.balls + 1,
                 fours: b.fours + (isFour ? 1 : 0),
                 sixes: b.sixes + (isSix ? 1 : 0),
@@ -449,6 +471,19 @@ function App() {
         ),
       );
     } else {
+      const newRuns = runs;
+
+      // Check for milestones on first scoring
+      [30, 50, 100].forEach((milestone) => {
+        if (newRuns >= milestone) {
+          setMilestone({
+            playerName: activeBatsman,
+            milestone,
+            type: 'batsman',
+          });
+        }
+      });
+
       setBatsmenStats([
         ...batsmenStats,
         {
@@ -475,13 +510,29 @@ function App() {
     );
     if (existingBowler) {
       const newBalls = existingBowler.balls + (isLegal ? 1 : 0);
+      const previousWickets = existingBowler.wickets;
+      const newWickets = previousWickets + (isWicket ? 1 : 0);
+
+      // Check for bowling milestones: 3 and 5 wickets
+      if (isWicket) {
+        [3, 5].forEach((milestone) => {
+          if (previousWickets < milestone && newWickets >= milestone) {
+            setMilestone({
+              playerName: currentBowler,
+              milestone,
+              type: 'bowler',
+            });
+          }
+        });
+      }
+
       setBowlerStats(
         bowlerStats.map((b) =>
           b.name === currentBowler && b.innings === innings
             ? {
                 ...b,
                 runsConceded: b.runsConceded + runs,
-                wickets: b.wickets + (isWicket ? 1 : 0),
+                wickets: newWickets,
                 balls: newBalls,
                 overs: Math.floor(newBalls / 6) + (newBalls % 6) / 10,
                 wides: b.wides + (ballType === 'WD' ? 1 : 0),
@@ -491,12 +542,27 @@ function App() {
         ),
       );
     } else {
+      const newWickets = isWicket ? 1 : 0;
+
+      // Check for milestones on first wicket stats
+      if (isWicket) {
+        [3, 5].forEach((milestone) => {
+          if (newWickets >= milestone) {
+            setMilestone({
+              playerName: currentBowler,
+              milestone,
+              type: 'bowler',
+            });
+          }
+        });
+      }
+
       setBowlerStats([
         ...bowlerStats,
         {
           name: currentBowler,
           runsConceded: runs,
-          wickets: isWicket ? 1 : 0,
+          wickets: newWickets,
           balls: isLegal ? 1 : 0,
           overs: isLegal ? 0.1 : 0,
           innings: innings,
@@ -1622,6 +1688,16 @@ function App() {
           )}
         </div>
       </div>
+
+      {/* Milestone Popup */}
+      {milestone && (
+        <MilestonePopup
+          playerName={milestone.playerName}
+          milestone={milestone.milestone}
+          type={milestone.type}
+          onClose={() => setMilestone(null)}
+        />
+      )}
     </div>
   );
 }

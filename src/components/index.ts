@@ -10,3 +10,4 @@ export { ActionButtons } from './ActionButtons';
 export { PreviousOvers } from './PreviousOvers';
 export { Statistics } from './Statistics';
 export { PlayerSetup } from './PlayerSetup';
+export { MilestonePopup } from './MilestonePopup';
