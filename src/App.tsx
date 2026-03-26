@@ -57,8 +57,12 @@ function App() {
     const saved = sessionStorage.getItem('team2Players');
     return saved ? JSON.parse(saved) : [];
   });
+  const [team3Players, setTeam3Players] = useState<string[]>(() => {
+    const saved = sessionStorage.getItem('team3Players');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [newPlayerName, setNewPlayerName] = useState('');
-  const [addingToTeam, setAddingToTeam] = useState<1 | 2 | null>(null);
+  const [addingToTeam, setAddingToTeam] = useState<1 | 2 | 3 | null>(null);
 
   // Load from sessionStorage or use defaults
   const [team1Name, setTeam1Name] = useState(
@@ -67,6 +71,19 @@ function App() {
   const [team2Name, setTeam2Name] = useState(
     () => sessionStorage.getItem('team2Name') || 'Team 2',
   );
+  const [team3Name, setTeam3Name] = useState(
+    () => sessionStorage.getItem('team3Name') || 'Team 3',
+  );
+
+  // Which two teams are playing this match
+  const [matchTeamA, setMatchTeamA] = useState<1 | 2 | 3>(() => {
+    const saved = sessionStorage.getItem('matchTeamA');
+    return saved ? (parseInt(saved) as 1 | 2 | 3) : 1;
+  });
+  const [matchTeamB, setMatchTeamB] = useState<1 | 2 | 3>(() => {
+    const saved = sessionStorage.getItem('matchTeamB');
+    return saved ? (parseInt(saved) as 1 | 2 | 3) : 2;
+  });
   const [currentBatsman, setCurrentBatsman] = useState(() => {
     const saved = sessionStorage.getItem('currentBatsman');
     return saved || '';
@@ -230,11 +247,15 @@ function App() {
   useEffect(() => {
     sessionStorage.setItem('team1Name', team1Name);
     sessionStorage.setItem('team2Name', team2Name);
+    sessionStorage.setItem('team3Name', team3Name);
     sessionStorage.setItem('batsmenStats', JSON.stringify(batsmenStats));
     sessionStorage.setItem('bowlerStats', JSON.stringify(bowlerStats));
     sessionStorage.setItem('fielderStats', JSON.stringify(fielderStats));
     sessionStorage.setItem('team1Players', JSON.stringify(team1Players));
     sessionStorage.setItem('team2Players', JSON.stringify(team2Players));
+    sessionStorage.setItem('team3Players', JSON.stringify(team3Players));
+    sessionStorage.setItem('matchTeamA', matchTeamA.toString());
+    sessionStorage.setItem('matchTeamB', matchTeamB.toString());
     sessionStorage.setItem('matchOvers', matchOvers.toString());
     sessionStorage.setItem('currentBatsman', currentBatsman);
     sessionStorage.setItem('nonStriker', nonStriker);
@@ -277,11 +298,15 @@ function App() {
   }, [
     team1Name,
     team2Name,
+    team3Name,
     batsmenStats,
     bowlerStats,
     fielderStats,
     team1Players,
     team2Players,
+    team3Players,
+    matchTeamA,
+    matchTeamB,
     matchOvers,
     tossWinner,
     currentBatsman,
@@ -312,13 +337,29 @@ function App() {
     matchCompleted,
   ]);
 
-  const addPlayerToTeam = (team: 1 | 2) => {
+  const getTeamName = (teamNum: 1 | 2 | 3): string => {
+    if (teamNum === 1) return team1Name;
+    if (teamNum === 2) return team2Name;
+    return team3Name;
+  };
+
+  const getTeamPlayersList = (teamNum: 1 | 2 | 3): string[] => {
+    if (teamNum === 1) return team1Players;
+    if (teamNum === 2) return team2Players;
+    return team3Players;
+  };
+
+  // Active team names for the current match
+  const activeTeamAName = getTeamName(matchTeamA);
+  const activeTeamBName = getTeamName(matchTeamB);
+
+  const addPlayerToTeam = (team: 1 | 2 | 3) => {
     if (!newPlayerName.trim()) {
       alert('Please enter a player name!');
       return;
     }
 
-    const players = team === 1 ? team1Players : team2Players;
+    const players = getTeamPlayersList(team);
 
     // Check if team already has 11 players
     if (players.length >= 11) {
@@ -333,15 +374,17 @@ function App() {
 
     if (team === 1) {
       setTeam1Players([...team1Players, newPlayerName.trim()]);
-    } else {
+    } else if (team === 2) {
       setTeam2Players([...team2Players, newPlayerName.trim()]);
+    } else {
+      setTeam3Players([...team3Players, newPlayerName.trim()]);
     }
     setNewPlayerName('');
     setAddingToTeam(null);
   };
 
-  const addPlayerToTeamByName = (team: 1 | 2, playerName: string) => {
-    const players = team === 1 ? team1Players : team2Players;
+  const addPlayerToTeamByName = (team: 1 | 2 | 3, playerName: string) => {
+    const players = getTeamPlayersList(team);
 
     // Check if team already has 11 players
     if (players.length >= 11) {
@@ -356,46 +399,77 @@ function App() {
 
     if (team === 1) {
       setTeam1Players([...team1Players, playerName]);
-    } else {
+    } else if (team === 2) {
       setTeam2Players([...team2Players, playerName]);
+    } else {
+      setTeam3Players([...team3Players, playerName]);
     }
   };
 
-  const swapPlayerBetweenTeams = (playerName: string, fromTeam: 1 | 2) => {
-    const toTeam = fromTeam === 1 ? 2 : 1;
-    const toPlayers = toTeam === 1 ? team1Players : team2Players;
+  const movePlayerToTeam = (
+    playerName: string,
+    fromTeam: 1 | 2 | 3,
+    toTeam: 1 | 2 | 3,
+  ) => {
+    const toPlayers = getTeamPlayersList(toTeam);
 
     // Check if destination team already has 11 players
     if (toPlayers.length >= 11) {
       alert(
-        `Cannot swap! ${
-          toTeam === 1 ? team1Name : team2Name
-        } already has maximum 11 players.`,
+        `Cannot move! ${getTeamName(toTeam)} already has maximum 11 players.`,
       );
       return;
     }
 
-    // Remove from source team and add to destination team
+    // Remove from source team
     if (fromTeam === 1) {
       setTeam1Players(team1Players.filter((p) => p !== playerName));
-      setTeam2Players([...team2Players, playerName]);
-    } else {
+    } else if (fromTeam === 2) {
       setTeam2Players(team2Players.filter((p) => p !== playerName));
-      setTeam1Players([...team1Players, playerName]);
+    } else {
+      setTeam3Players(team3Players.filter((p) => p !== playerName));
+    }
+
+    // Add to destination team
+    if (toTeam === 1) {
+      setTeam1Players([
+        ...team1Players.filter((p) => p !== playerName),
+        playerName,
+      ]);
+    } else if (toTeam === 2) {
+      setTeam2Players([
+        ...team2Players.filter((p) => p !== playerName),
+        playerName,
+      ]);
+    } else {
+      setTeam3Players([
+        ...team3Players.filter((p) => p !== playerName),
+        playerName,
+      ]);
     }
   };
 
-  const removePlayerFromTeam = (team: 1 | 2, playerName: string) => {
+  const removePlayerFromTeam = (team: 1 | 2 | 3, playerName: string) => {
     if (team === 1) {
       setTeam1Players(team1Players.filter((p) => p !== playerName));
-    } else {
+    } else if (team === 2) {
       setTeam2Players(team2Players.filter((p) => p !== playerName));
+    } else {
+      setTeam3Players(team3Players.filter((p) => p !== playerName));
     }
   };
 
   const startMatch = () => {
-    if (team1Players.length === 0 || team2Players.length === 0) {
-      alert('Please add at least one player to each team before starting!');
+    if (matchTeamA === matchTeamB) {
+      alert('Please select two different teams to play!');
+      return;
+    }
+    const teamAPlayers = getTeamPlayersList(matchTeamA);
+    const teamBPlayers = getTeamPlayersList(matchTeamB);
+    if (teamAPlayers.length === 0 || teamBPlayers.length === 0) {
+      alert(
+        'Please add at least one player to each selected team before starting!',
+      );
       return;
     }
     if (!matchOvers || matchOvers <= 0) {
@@ -412,12 +486,16 @@ function App() {
   };
 
   const getBattingTeamPlayers = () => {
-    // First innings: team that won toss bats
+    // First innings: team that won toss bats (A=1, B=2)
     // Second innings: other team bats
     if (innings === 1) {
-      return tossWinner === 1 ? team1Players : team2Players;
+      return tossWinner === 1
+        ? getTeamPlayersList(matchTeamA)
+        : getTeamPlayersList(matchTeamB);
     } else {
-      return tossWinner === 1 ? team2Players : team1Players;
+      return tossWinner === 1
+        ? getTeamPlayersList(matchTeamB)
+        : getTeamPlayersList(matchTeamA);
     }
   };
 
@@ -425,9 +503,13 @@ function App() {
     // First innings: team that lost toss bowls
     // Second innings: other team bowls
     if (innings === 1) {
-      return tossWinner === 1 ? team2Players : team1Players;
+      return tossWinner === 1
+        ? getTeamPlayersList(matchTeamB)
+        : getTeamPlayersList(matchTeamA);
     } else {
-      return tossWinner === 1 ? team1Players : team2Players;
+      return tossWinner === 1
+        ? getTeamPlayersList(matchTeamA)
+        : getTeamPlayersList(matchTeamB);
     }
   };
 
@@ -1379,14 +1461,21 @@ function App() {
   };
 
   const getMatchResult = () => {
-    const team2Won = innings2Score >= target;
-    const winningTeam = team2Won ? team2Name : team1Name;
+    // Chasing team = team that bats in innings 2
+    const chasingTeamNum = tossWinner === 1 ? matchTeamB : matchTeamA;
+    const defendingTeamNum = tossWinner === 1 ? matchTeamA : matchTeamB;
+    const chasingTeamName = getTeamName(chasingTeamNum);
+    const defendingTeamName = getTeamName(defendingTeamNum);
+
+    const chasingTeamWon = innings2Score >= target;
+    const winningTeam = chasingTeamWon ? chasingTeamName : defendingTeamName;
 
     let winMargin = '';
-    if (team2Won) {
-      // Calculate wickets remaining based on actual team size
-      const team2TotalWickets = team2Players.length - 1;
-      const wicketsRemaining = team2TotalWickets - innings2Wickets;
+    if (chasingTeamWon) {
+      // Calculate wickets remaining based on actual chasing team size
+      const chasingTeamPlayers = getTeamPlayersList(chasingTeamNum);
+      const totalWickets = chasingTeamPlayers.length - 1;
+      const wicketsRemaining = totalWickets - innings2Wickets;
       winMargin = `by ${wicketsRemaining} wicket${
         wicketsRemaining !== 1 ? 's' : ''
       }`;
@@ -1493,17 +1582,24 @@ function App() {
             <PlayerSetup
               team1Name={team1Name}
               team2Name={team2Name}
+              team3Name={team3Name}
               team1Players={team1Players}
               team2Players={team2Players}
+              team3Players={team3Players}
+              matchTeamA={matchTeamA}
+              matchTeamB={matchTeamB}
               matchOvers={matchOvers}
               tossWinner={tossWinner}
               onTeam1NameChange={setTeam1Name}
               onTeam2NameChange={setTeam2Name}
+              onTeam3NameChange={setTeam3Name}
+              onMatchTeamAChange={setMatchTeamA}
+              onMatchTeamBChange={setMatchTeamB}
               onMatchOversChange={setMatchOvers}
               onTossWinnerChange={setTossWinner}
               onAddPlayer={addPlayerToTeam}
               onAddPlayerByName={addPlayerToTeamByName}
-              onSwapPlayer={swapPlayerBetweenTeams}
+              onMovePlayer={movePlayerToTeam}
               onRemovePlayer={removePlayerFromTeam}
               newPlayerName={newPlayerName}
               onNewPlayerNameChange={setNewPlayerName}
@@ -1518,8 +1614,8 @@ function App() {
             />
           ) : matchCompleted ? (
             <MatchSummary
-              team1Name={team1Name}
-              team2Name={team2Name}
+              team1Name={tossWinner === 1 ? activeTeamAName : activeTeamBName}
+              team2Name={tossWinner === 1 ? activeTeamBName : activeTeamAName}
               team1Score={innings1Score}
               team1Wickets={innings1Wickets}
               team2Score={innings2Score}
@@ -1544,8 +1640,8 @@ function App() {
           ) : (
             <>
               <TeamNameInput
-                team1Name={team1Name}
-                team2Name={team2Name}
+                team1Name={activeTeamAName}
+                team2Name={activeTeamBName}
                 innings={innings}
                 tossWinner={tossWinner}
                 onTeam1Change={setTeam1Name}
