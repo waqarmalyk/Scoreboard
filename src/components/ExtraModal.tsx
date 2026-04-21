@@ -35,13 +35,6 @@ const SECTIONS: {
     ],
   },
   {
-    heading: '↔️ Wide',
-    activeColor: 'bg-yellow-500/70 border-yellow-300 scale-105 shadow-lg',
-    options: [
-      { label: 'WD', emoji: '↔️', type: 'WD', totalRuns: 1, batsmanRuns: 0 },
-    ],
-  },
-  {
     heading: '➕ Extra',
     activeColor: 'bg-blue-500/70 border-blue-300 scale-105 shadow-lg',
     options: [
@@ -92,11 +85,11 @@ export const ExtraModal: React.FC<ExtraModalProps> = ({
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4'>
       <div
-        className={`${getGlassColor()} backdrop-blur-xl rounded-2xl border ${getBorderColor()} shadow-2xl p-6 w-full max-w-md`}
+        className={`${getGlassColor()} backdrop-blur-xl rounded-2xl border ${getBorderColor()} shadow-2xl w-full max-w-md flex flex-col max-h-[90vh]`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className='text-center mb-5'>
+        <div className='text-center pt-6 px-6 pb-3 flex-shrink-0'>
           <div className='text-4xl mb-1'>➕</div>
           <h2 className={`text-xl font-bold ${getTextColor()}`}>Extra</h2>
           <p className={`text-sm mt-1 opacity-70 ${getTextColor()}`}>
@@ -104,74 +97,76 @@ export const ExtraModal: React.FC<ExtraModalProps> = ({
           </p>
         </div>
 
-        {/* Option sections */}
-        <div className='space-y-4 mb-5'>
-          {SECTIONS.map((section) => (
-            <div key={section.heading}>
+        {/* Scrollable option sections */}
+        <div className='overflow-y-auto flex-1 px-6'>
+          <div className='space-y-4 pb-2'>
+            {SECTIONS.map((section) => (
+              <div key={section.heading}>
+                <p
+                  className={`text-xs font-semibold uppercase tracking-wide mb-2 opacity-60 ${getTextColor()}`}
+                >
+                  {section.heading}
+                </p>
+                <div className='grid grid-cols-3 gap-2'>
+                  {section.options.map((opt) => {
+                    const isSelected =
+                      selectedRunOut === null &&
+                      selected?.label === opt.label &&
+                      selected?.type === opt.type;
+                    return (
+                      <button
+                        key={`${opt.type}-${opt.label}`}
+                        onClick={() => {
+                          setSelected(opt);
+                          setSelectedRunOut(null);
+                        }}
+                        className={`flex flex-col items-center justify-center gap-1 rounded-xl border-2 py-3 px-2 transition-all duration-150 font-semibold text-sm
+                        ${isSelected ? section.activeColor : 'bg-white/10 border-white/20 hover:bg-white/20'}
+                        ${getTextColor()}`}
+                      >
+                        <span className='text-xl'>{opt.emoji}</span>
+                        <span>{opt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+
+            {/* Run Out section */}
+            <div>
               <p
                 className={`text-xs font-semibold uppercase tracking-wide mb-2 opacity-60 ${getTextColor()}`}
               >
-                {section.heading}
+                🏃 Run Out (runs completed)
               </p>
               <div className='grid grid-cols-3 gap-2'>
-                {section.options.map((opt) => {
-                  const isSelected =
-                    selectedRunOut === null &&
-                    selected?.label === opt.label &&
-                    selected?.type === opt.type;
-                  return (
-                    <button
-                      key={`${opt.type}-${opt.label}`}
-                      onClick={() => {
-                        setSelected(opt);
-                        setSelectedRunOut(null);
-                      }}
-                      className={`flex flex-col items-center justify-center gap-1 rounded-xl border-2 py-3 px-2 transition-all duration-150 font-semibold text-sm
-                        ${isSelected ? section.activeColor : 'bg-white/10 border-white/20 hover:bg-white/20'}
-                        ${getTextColor()}`}
-                    >
-                      <span className='text-xl'>{opt.emoji}</span>
-                      <span>{opt.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-
-          {/* Run Out section */}
-          <div>
-            <p
-              className={`text-xs font-semibold uppercase tracking-wide mb-2 opacity-60 ${getTextColor()}`}
-            >
-              🏃 Run Out (runs completed)
-            </p>
-            <div className='grid grid-cols-3 gap-2'>
-              {[0, 1, 2, 3, 4, 5].map((runs) => (
-                <button
-                  key={`ro-${runs}`}
-                  onClick={() => {
-                    setSelectedRunOut(runs);
-                    setSelected(null);
-                  }}
-                  className={`flex flex-col items-center justify-center gap-1 rounded-xl border-2 py-3 px-2 transition-all duration-150 font-semibold text-sm
+                {[0, 1, 2, 3, 4, 5].map((runs) => (
+                  <button
+                    key={`ro-${runs}`}
+                    onClick={() => {
+                      setSelectedRunOut(runs);
+                      setSelected(null);
+                    }}
+                    className={`flex flex-col items-center justify-center gap-1 rounded-xl border-2 py-3 px-2 transition-all duration-150 font-semibold text-sm
                     ${selectedRunOut === runs ? 'bg-red-500/70 border-red-300 scale-105 shadow-lg' : 'bg-white/10 border-white/20 hover:bg-white/20'}
                     ${getTextColor()}`}
-                >
-                  <span className='text-xl'>{runs}</span>
-                  <span>
-                    {runs === 0
-                      ? 'Direct'
-                      : `${runs} run${runs > 1 ? 's' : ''}`}
-                  </span>
-                </button>
-              ))}
+                  >
+                    <span className='text-xl'>{runs}</span>
+                    <span>
+                      {runs === 0
+                        ? 'Direct'
+                        : `${runs} run${runs > 1 ? 's' : ''}`}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div className='flex gap-3'>
+        {/* Action buttons — sticky at bottom */}
+        <div className='flex gap-3 px-6 pb-6 pt-3 flex-shrink-0'>
           <button
             onClick={onCancel}
             className={`flex-1 py-3 rounded-xl border ${getBorderColor()} bg-white/10 hover:bg-white/20 ${getTextColor()} font-semibold transition-all`}
