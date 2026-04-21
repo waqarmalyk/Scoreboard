@@ -4,6 +4,7 @@ interface ActionButtonsProps {
   onResetMatch: () => void;
   onStartSecondInnings: () => void;
   onResetFullMatch: () => void;
+  onEndMatch: () => void;
   getTextColor: () => string;
 }
 

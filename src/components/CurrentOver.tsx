@@ -32,18 +32,23 @@ export const CurrentOver: React.FC<CurrentOverProps> = ({
         {currentOver.map((ball, index) => (
           <div
             key={index}
-            className={`w-12 h-12 rounded-full flex items-center justify-center font-bold ${getTextColor()} border-2 ${
-              ball.type === 'W'
-                ? 'bg-red-500/70 border-red-300'
-                : ball.type === '4'
-                ? 'bg-blue-500/70 border-blue-300'
-                : ball.type === '6'
-                ? 'bg-green-500/70 border-green-300'
-                : ball.type === 'WD' || ball.type === 'NB'
-                ? 'bg-yellow-500/70 border-yellow-300'
-                : ball.type === '0'
-                ? 'bg-gray-500/70 border-gray-300'
-                : 'bg-purple-500/70 border-purple-300'
+            className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-xs ${getTextColor()} border-2 ${
+              ball.type === 'W' && ball.runs > 0
+                ? 'bg-orange-500/70 border-orange-300'
+                : ball.type === 'W'
+                  ? 'bg-red-500/70 border-red-300'
+                  : ball.type === '4'
+                    ? 'bg-blue-500/70 border-blue-300'
+                    : ball.type === '6'
+                      ? 'bg-green-500/70 border-green-300'
+                      : ball.type === 'NB' &&
+                          (ball.runs - 1 === 4 || ball.runs - 1 === 6)
+                        ? 'bg-teal-500/70 border-teal-300'
+                        : ball.type === 'WD' || ball.type === 'NB'
+                          ? 'bg-yellow-500/70 border-yellow-300'
+                          : ball.type === '0'
+                            ? 'bg-gray-500/70 border-gray-300'
+                            : 'bg-purple-500/70 border-purple-300'
             }`}
           >
             {getBallDisplay(ball)}

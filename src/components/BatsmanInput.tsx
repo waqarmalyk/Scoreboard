@@ -47,11 +47,13 @@ export const BatsmanInput: React.FC<BatsmanInputProps> = ({
             className={`w-full ${getGlassColor()} border ${getBorderColor()} rounded-lg px-3 py-2 ${getTextColor()} ${getPlaceholderColor()} focus:outline-none focus:ring-2 focus:ring-purple-300/50`}
           >
             <option value=''>Select Batsman</option>
-            {availablePlayers.map((player) => (
-              <option key={player} value={player}>
-                {player}
-              </option>
-            ))}
+            {availablePlayers
+              .filter((p) => p !== nonStriker)
+              .map((player) => (
+                <option key={player} value={player}>
+                  {player}
+                </option>
+              ))}
           </select>
         </div>
       </div>
@@ -80,11 +82,13 @@ export const BatsmanInput: React.FC<BatsmanInputProps> = ({
             className={`w-full ${getGlassColor()} border ${getBorderColor()} rounded-lg px-3 py-2 ${getTextColor()} ${getPlaceholderColor()} focus:outline-none focus:ring-2 focus:ring-purple-300/50`}
           >
             <option value=''>Select Batsman</option>
-            {availablePlayers.map((player) => (
-              <option key={player} value={player}>
-                {player}
-              </option>
-            ))}
+            {availablePlayers
+              .filter((p) => p !== currentBatsman)
+              .map((player) => (
+                <option key={player} value={player}>
+                  {player}
+                </option>
+              ))}
           </select>
         </div>
       </div>

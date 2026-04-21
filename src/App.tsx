@@ -22,6 +22,8 @@ import { Statistics } from './components/Statistics';
 import { PlayerSetup } from './components/PlayerSetup';
 import { MatchSummary } from './components/MatchSummary';
 import { MilestonePopup } from './components/MilestonePopup';
+import { WicketModal } from './components/WicketModal';
+import { TeamSetupModal } from './components/TeamSetupModal';
 
 function App() {
   // Theme state
@@ -241,6 +243,64 @@ function App() {
     playerName: string;
     milestone: number;
     type: 'batsman' | 'bowler';
+  } | null>(null);
+
+  // Wicket modal state
+  const [wicketModalOpen, setWicketModalOpen] = useState(false);
+  const [wicketModalFieldingPlayers, setWicketModalFieldingPlayers] = useState<
+    string[]
+  >([]);
+  const [wicketModalBatsmanName, setWicketModalBatsmanName] = useState('');
+  const [wicketModalForceDismissal, setWicketModalForceDismissal] = useState<
+    'caught' | 'bowled' | 'run-out' | 'stumped' | 'hit-wicket' | undefined
+  >(undefined);
+
+  // Player select modals
+  const [teamSetupModal, setTeamSetupModal] = useState<{
+    fields: ('striker' | 'nonStriker' | 'bowler')[];
+  } | null>(null);
+  const [dismissedBatsmen, setDismissedBatsmen] = useState<string[]>([]);
+  // Callback to run after a player is selected (used when ball is pending)
+  const [pendingBallAfterSelect, setPendingBallAfterSelect] = useState<
+    (() => void) | null
+  >(null);
+
+  // Fire pending ball callback once all required players are selected
+  useEffect(() => {
+    if (
+      pendingBallAfterSelect &&
+      currentBatsman &&
+      nonStriker &&
+      currentBowler &&
+      !teamSetupModal
+    ) {
+      const cb = pendingBallAfterSelect;
+      setTimeout(() => {
+        setPendingBallAfterSelect(null);
+        cb();
+      }, 0);
+    }
+  }, [
+    pendingBallAfterSelect,
+    currentBatsman,
+    nonStriker,
+    currentBowler,
+    teamSetupModal,
+  ]);
+  const [pendingWicketContext, setPendingWicketContext] = useState<{
+    batsmanName: string;
+    onStrikeWas: 'striker' | 'non-striker';
+    previousBatsmenStats: PlayerStats[];
+    previousBowlerStats: BowlerStats[];
+    previousFielderStats: FielderStats[];
+    previousTotalRuns: number;
+    previousWickets: number;
+    previousExtras: { wides: number; noBalls: number };
+    previousTotalBalls: number;
+    previousFirstInningsBalls: number;
+    previousCurrentOver: Ball[];
+    previousAllOvers: Ball[][];
+    runsBeforeOut?: number;
   } | null>(null);
 
   // Persist to sessionStorage
@@ -483,6 +543,9 @@ function App() {
     // Set maxBalls for first innings based on overs
     setMaxBalls(matchOvers * 6);
     setMatchStarted(true);
+    setTimeout(() => {
+      setTeamSetupModal({ fields: ['striker', 'nonStriker', 'bowler'] });
+    }, 100);
   };
 
   const getBattingTeamPlayers = () => {
@@ -686,40 +749,18 @@ function App() {
     ).length;
 
     if (currentLegalBalls >= 6) {
-      alert(
-        'Over is complete! Please wait for the new over to start or refresh if stuck.',
-      );
       return;
     }
 
-    // Validate batsman names
-    if (!currentBatsman || currentBatsman === '') {
-      alert('Please select the striker batsman before scoring!');
+    // Validate players — open setup modal with missing fields
+    const missingFields: ('striker' | 'nonStriker' | 'bowler')[] = [];
+    if (!currentBatsman) missingFields.push('striker');
+    if (!nonStriker) missingFields.push('nonStriker');
+    if (!currentBowler) missingFields.push('bowler');
+    if (missingFields.length > 0) {
+      setPendingBallAfterSelect(() => () => addBall(type, runs, batsmanRuns));
+      setTeamSetupModal({ fields: missingFields });
       return;
-    }
-    if (!nonStriker || nonStriker === '') {
-      alert('Please select the non-striker batsman before scoring!');
-      return;
-    }
-
-    // Validate bowler name
-    if (!currentBowler || currentBowler === '') {
-      alert('Please select the bowler before scoring!');
-      return;
-    }
-
-    // Prompt for bowler name at the start of a new over (after first over)
-    if (currentOver.length === 0 && allOvers.length > 0) {
-      const lastBowler = bowlerStats[bowlerStats.length - 1]?.name;
-      if (lastBowler && currentBowler === lastBowler) {
-        const confirmSameBowler = window.confirm(
-          `Continue with same bowler (${currentBowler})? Click Cancel to change bowler.`,
-        );
-        if (!confirmSameBowler) {
-          alert('Please update the bowler name before starting the new over!');
-          return;
-        }
-      }
     }
 
     // Save state before making changes (for undo)
@@ -764,11 +805,11 @@ function App() {
       },
     ]);
 
-    // Update extras
+    // Update extras — always 1 penalty regardless of runs scored off the ball
     if (type === 'WD') {
-      setExtras({ ...extras, wides: extras.wides + runs });
+      setExtras({ ...extras, wides: extras.wides + 1 });
     } else if (type === 'NB') {
-      setExtras({ ...extras, noBalls: extras.noBalls + runs });
+      setExtras({ ...extras, noBalls: extras.noBalls + 1 });
     }
 
     // Update player stats
@@ -877,30 +918,67 @@ function App() {
       setTimeout(() => {
         setAllOvers([...allOvers, updatedOver]);
         setCurrentOver([]);
-
-        // Strike rotation at end of over:
-        // At the end of every over, strike ALWAYS rotates because bowling switches to the other end
-        // - If last ball had odd runs (1,3,5): batsmen crossed during ball, then rotate again = same player retains strike
-        // - If last ball had even runs (0,2,4,6): batsmen didn't cross, then rotate once = other player gets strike
         setOnStrike((prev) => (prev === 'striker' ? 'non-striker' : 'striker'));
+        // Prompt for new bowler after over ends
+        setTeamSetupModal({ fields: ['bowler'] });
       }, 500);
     }
   };
 
-  const addWicket = () => {
+  // Opens the wicket modal after validation
+  const handleWicketButtonClick = () => {
     // Check if current over is already complete (6 legal balls)
     const currentLegalBalls = currentOver.filter(
       (b) => b.type !== 'WD' && b.type !== 'NB',
     ).length;
 
     if (currentLegalBalls >= 6) {
+      return;
+    }
+
+    // Validate players
+    const missingFields: ('striker' | 'nonStriker' | 'bowler')[] = [];
+    if (!currentBatsman) missingFields.push('striker');
+    if (!nonStriker) missingFields.push('nonStriker');
+    if (!currentBowler) missingFields.push('bowler');
+    if (missingFields.length > 0) {
+      setPendingBallAfterSelect(() => handleWicketButtonClick);
+      setTeamSetupModal({ fields: missingFields });
+      return;
+    }
+
+    // Save state before making changes (for undo)
+    const batsmanName = onStrike === 'striker' ? currentBatsman : nonStriker;
+    setPendingWicketContext({
+      batsmanName,
+      onStrikeWas: onStrike,
+      previousBatsmenStats: JSON.parse(JSON.stringify(batsmenStats)),
+      previousBowlerStats: JSON.parse(JSON.stringify(bowlerStats)),
+      previousFielderStats: JSON.parse(JSON.stringify(fielderStats)),
+      previousTotalRuns: totalRuns,
+      previousWickets: wickets,
+      previousExtras: JSON.parse(JSON.stringify(extras)),
+      previousTotalBalls: totalBalls,
+      previousFirstInningsBalls: firstInningsBalls,
+      previousCurrentOver: JSON.parse(JSON.stringify(currentOver)),
+      previousAllOvers: JSON.parse(JSON.stringify(allOvers)),
+    });
+    setWicketModalBatsmanName(batsmanName);
+    setWicketModalFieldingPlayers(getBowlingTeamPlayers());
+    setWicketModalForceDismissal(undefined);
+    setWicketModalOpen(true);
+  };
+
+  const handleRunOutWithRuns = (runsCompleted: number) => {
+    const currentLegalBalls = currentOver.filter(
+      (b) => b.type !== 'WD' && b.type !== 'NB',
+    ).length;
+    if (currentLegalBalls >= 6) {
       alert(
         'Over is complete! Please wait for the new over to start or refresh if stuck.',
       );
       return;
     }
-
-    // Validate batsman names
     if (!currentBatsman || currentBatsman === '') {
       alert('Please select the striker batsman before scoring!');
       return;
@@ -909,174 +987,78 @@ function App() {
       alert('Please select the non-striker batsman before scoring!');
       return;
     }
-
-    // Validate bowler name
     if (!currentBowler || currentBowler === '') {
       alert('Please select the bowler before scoring!');
       return;
     }
-
-    // Prompt for bowler name at the start of a new over (after first over)
-    if (currentOver.length === 0 && allOvers.length > 0) {
-      const lastBowler = bowlerStats[bowlerStats.length - 1]?.name;
-      if (lastBowler && currentBowler === lastBowler) {
-        const confirmSameBowler = window.confirm(
-          `Continue with same bowler (${currentBowler})? Click Cancel to change bowler.`,
-        );
-        if (!confirmSameBowler) {
-          alert('Please update the bowler name before starting the new over!');
-          return;
-        }
-      }
-    }
-
-    // Save state before making changes (for undo)
     const batsmanName = onStrike === 'striker' ? currentBatsman : nonStriker;
-    const previousBatsmenStats = JSON.parse(JSON.stringify(batsmenStats));
-    const previousBowlerStats = JSON.parse(JSON.stringify(bowlerStats));
-    const previousFielderStats = JSON.parse(JSON.stringify(fielderStats));
-    const previousTotalRuns = totalRuns;
-    const previousWickets = wickets;
-    const previousExtras = JSON.parse(JSON.stringify(extras));
-    const previousTotalBalls = totalBalls;
-    const previousFirstInningsBalls = firstInningsBalls;
-    const previousCurrentOver = JSON.parse(JSON.stringify(currentOver));
-    const previousAllOvers = JSON.parse(JSON.stringify(allOvers));
+    setPendingWicketContext({
+      batsmanName,
+      onStrikeWas: onStrike,
+      previousBatsmenStats: JSON.parse(JSON.stringify(batsmenStats)),
+      previousBowlerStats: JSON.parse(JSON.stringify(bowlerStats)),
+      previousFielderStats: JSON.parse(JSON.stringify(fielderStats)),
+      previousTotalRuns: totalRuns,
+      previousWickets: wickets,
+      previousExtras: JSON.parse(JSON.stringify(extras)),
+      previousTotalBalls: totalBalls,
+      previousFirstInningsBalls: firstInningsBalls,
+      previousCurrentOver: JSON.parse(JSON.stringify(currentOver)),
+      previousAllOvers: JSON.parse(JSON.stringify(allOvers)),
+      runsBeforeOut: runsCompleted,
+    });
+    setWicketModalBatsmanName(batsmanName);
+    setWicketModalFieldingPlayers(getBowlingTeamPlayers());
+    setWicketModalForceDismissal('run-out');
+    setWicketModalOpen(true);
+  };
 
-    // Get fielding team players
-    const fieldingTeamPlayers = getBowlingTeamPlayers();
-
-    // First, ask for dismissal type
-    const dismissalOptions = [
-      'Caught',
-      'Bowled',
-      'Run Out',
-      'Stumped',
-      'Hit Wicket',
-    ];
-    let dismissalType:
+  const processWicket = (
+    dismissalType:
       | 'caught'
       | 'bowled'
+      | 'lbw'
       | 'run-out'
       | 'stumped'
-      | 'hit-wicket'
-      | null = null;
+      | 'hit-wicket',
+    fielderName: string,
+  ) => {
+    setWicketModalOpen(false);
+    if (!pendingWicketContext) return;
 
-    let validDismissalType = false;
-    while (!validDismissalType) {
-      const dismissalPrompt = `How was the batsman dismissed?\n\n${dismissalOptions
-        .map((d, i) => `${i + 1}. ${d}`)
-        .join('\n')}\n\nEnter number (1-${dismissalOptions.length}):`;
-      const dismissalInput = window.prompt(dismissalPrompt);
+    const {
+      batsmanName,
+      onStrikeWas,
+      previousBatsmenStats,
+      previousBowlerStats,
+      previousFielderStats,
+      previousTotalRuns,
+      previousWickets,
+      previousExtras,
+      previousTotalBalls,
+      previousFirstInningsBalls,
+      previousCurrentOver,
+      previousAllOvers,
+      runsBeforeOut,
+    } = pendingWicketContext;
+    setPendingWicketContext(null);
 
-      // If user cancels, exit without recording wicket
-      if (dismissalInput === null) {
-        return;
-      }
-
-      if (dismissalInput) {
-        const dismissalIndex = parseInt(dismissalInput.trim()) - 1;
-        if (
-          !isNaN(dismissalIndex) &&
-          dismissalIndex >= 0 &&
-          dismissalIndex < dismissalOptions.length
-        ) {
-          const types: Array<
-            'caught' | 'bowled' | 'run-out' | 'stumped' | 'hit-wicket'
-          > = ['caught', 'bowled', 'run-out', 'stumped', 'hit-wicket'];
-          dismissalType = types[dismissalIndex];
-          validDismissalType = true;
-        } else {
-          alert(
-            `Invalid selection! Please enter a number between 1 and ${dismissalOptions.length}`,
-          );
-        }
-      } else {
-        alert('Please select a dismissal type!');
-      }
-    }
-
-    // Now ask for fielder name if needed (for caught, run-out, stumped)
-    let fielderName = '';
-    if (
-      dismissalType &&
-      ['caught', 'run-out', 'stumped'].includes(dismissalType) &&
-      fieldingTeamPlayers.length > 0
-    ) {
-      let validInput = false;
-
-      const actionText =
-        dismissalType === 'caught'
-          ? 'took the catch'
-          : dismissalType === 'run-out'
-            ? 'effected the run out'
-            : 'stumped the batsman';
-
-      while (!validInput) {
-        const fielderPrompt = `Who ${actionText}?\n\n${fieldingTeamPlayers
-          .map((p, i) => `${i + 1}. ${p}`)
-          .join('\n')}\n\nEnter number (1-${
-          fieldingTeamPlayers.length
-        }) or type name:`;
-        const fielderInput = window.prompt(fielderPrompt);
-
-        // If user cancels, exit without recording wicket
-        if (fielderInput === null) {
-          return;
-        }
-
-        if (fielderInput) {
-          const trimmedInput = fielderInput.trim();
-
-          // If empty after trim, show error and continue loop
-          if (!trimmedInput) {
-            alert('Fielder name cannot be empty!');
-            continue;
-          }
-
-          const fielderIndex = parseInt(trimmedInput) - 1;
-
-          // Check if input is a number
-          if (
-            !isNaN(fielderIndex) &&
-            trimmedInput === (fielderIndex + 1).toString()
-          ) {
-            // It's a number input - validate it's in range
-            if (
-              fielderIndex >= 0 &&
-              fielderIndex < fieldingTeamPlayers.length
-            ) {
-              fielderName = fieldingTeamPlayers[fielderIndex];
-              validInput = true;
-            } else {
-              alert(
-                `Invalid selection! Please enter a number between 1 and ${fieldingTeamPlayers.length}`,
-              );
-              // Continue loop to re-prompt
-            }
-          } else {
-            // It's a name input - accept it
-            fielderName = trimmedInput;
-            validInput = true;
-          }
-        } else {
-          alert('Fielder name cannot be empty!');
-        }
-      }
-    }
-
+    const extraRuns = runsBeforeOut ?? 0;
     const newBall: Ball = {
       type: 'W',
-      runs: 0,
-      fielder: fielderName,
-      dismissalType: dismissalType!,
+      runs: extraRuns,
+      fielder: fielderName || undefined,
+      dismissalType,
     };
     const updatedOver = [...currentOver, newBall];
 
     setWickets(wickets + 1);
     setCurrentOver(updatedOver);
+    if (extraRuns > 0) {
+      setTotalRuns(previousTotalRuns + extraRuns);
+    }
 
-    // Save action for undo - add to history array
+    // Save action for undo
     setActionHistory([
       ...actionHistory,
       {
@@ -1084,7 +1066,7 @@ function App() {
         ball: newBall,
         batsmanName,
         bowlerName: currentBowler,
-        onStrikeWas: onStrike,
+        onStrikeWas,
         batsmenStatsBefore: previousBatsmenStats,
         bowlerStatsBefore: previousBowlerStats,
         fielderStatsBefore: previousFielderStats,
@@ -1098,50 +1080,56 @@ function App() {
       },
     ]);
 
-    setWickets(wickets + 1);
-    setCurrentOver(updatedOver);
-
     // Update player stats
-    updateBatsmanStats(0, false, false);
-    updateBowlerStats(0, true, true, 'W');
+    updateBatsmanStats(extraRuns, false, false);
+    if (extraRuns > 0 && [1, 3, 5].includes(extraRuns)) {
+      setOnStrike(onStrikeWas === 'striker' ? 'non-striker' : 'striker');
+    }
+    // Run-out does NOT count as a wicket for the bowler (cricket rule)
+    updateBowlerStats(extraRuns, dismissalType !== 'run-out', true, 'W');
 
     // Update fielder stats if fielder was selected
     if (fielderName) {
       updateFielderStats(fielderName);
     }
 
-    // Check if all out in 2nd innings (bowling team wins)
+    // Determine all-out threshold based on actual team size
+    const battingPlayers = getBattingTeamPlayers();
+    const allOutWickets = Math.max(battingPlayers.length - 1, 1);
     const newWickets = wickets + 1;
-    if (targetMode && newWickets >= 10) {
-      // Save second innings data before showing summary
-      setInnings2Score(totalRuns);
-      setInnings2Wickets(newWickets);
-      const totalBalls2nd = totalBalls + 1;
-      setInnings2Overs(`${Math.floor(totalBalls2nd / 6)}.${totalBalls2nd % 6}`);
 
-      setTimeout(() => {
-        setMatchCompleted(true);
-      }, 500);
-      return; // Don't process rest
+    // Check if 1st innings all out — still track the ball then stop
+    if (!targetMode && newWickets >= allOutWickets) {
+      // Track total balls for this final wicket ball
+      const newFirstInningsBalls = firstInningsBalls + 1;
+      setFirstInningsBalls(newFirstInningsBalls);
+      // Complete the over if needed
+      const legalBallsFinal = updatedOver.filter(
+        (b) => b.type !== 'WD' && b.type !== 'NB',
+      );
+      if (legalBallsFinal.length === 6) {
+        setTimeout(() => {
+          setAllOvers([...allOvers, updatedOver]);
+          setCurrentOver([]);
+          setOnStrike(onStrikeWas === 'striker' ? 'non-striker' : 'striker');
+        }, 500);
+      }
+      return;
     }
 
-    // Check if 1st innings all out
-    if (!targetMode && newWickets >= 10) {
-      setTimeout(() => {
-        alert('All out! Click "Start 2nd Innings" to begin the chase.');
-      }, 500);
-    }
-
-    // New batsman comes on strike - clear the selection
-    if (onStrike === 'striker') {
+    // New batsman comes on strike — open setup modal
+    if (onStrikeWas === 'striker') {
+      setDismissedBatsmen((prev) => [...prev, currentBatsman]);
       setCurrentBatsman('');
+      setTeamSetupModal({ fields: ['striker'] });
     } else {
+      setDismissedBatsmen((prev) => [...prev, nonStriker]);
       setNonStriker('');
-      // After wicket, new batsman is on strike
       setOnStrike('non-striker');
+      setTeamSetupModal({ fields: ['nonStriker'] });
     }
 
-    // Track total balls (for both innings)
+    // Track total balls
     if (innings === 1) {
       setFirstInningsBalls(firstInningsBalls + 1);
     } else {
@@ -1153,12 +1141,11 @@ function App() {
       (b) => b.type !== 'WD' && b.type !== 'NB',
     );
     if (legalBalls.length === 6) {
-      // Delay moving to next over so user can see the 6th ball
       setTimeout(() => {
         setAllOvers([...allOvers, updatedOver]);
         setCurrentOver([]);
-        // Rotate strike at end of over
-        setOnStrike(onStrike === 'striker' ? 'non-striker' : 'striker');
+        setOnStrike(onStrikeWas === 'striker' ? 'non-striker' : 'striker');
+        setTeamSetupModal({ fields: ['bowler'] });
       }, 500);
     }
   };
@@ -1238,12 +1225,11 @@ function App() {
     setNonStriker('');
     setCurrentBowler('');
     setOnStrike('striker');
+    setDismissedBatsmen([]);
 
-    // Prompt user to set new players
+    // Show player selection modals for 2nd innings
     setTimeout(() => {
-      alert(
-        '⚠️ 2nd Innings Started! Please select the new batsmen and bowler before scoring.',
-      );
+      setTeamSetupModal({ fields: ['striker', 'nonStriker', 'bowler'] });
     }, 100);
   };
 
@@ -1254,6 +1240,17 @@ function App() {
     setTargetMode(false);
     setTarget(0);
     setMaxBalls(0);
+  };
+
+  const endMatch = () => {
+    // Save 2nd innings data and complete match
+    const totalBalls2nd = totalBalls;
+    setInnings2Score(totalRuns);
+    setInnings2Wickets(wickets);
+    setInnings2Overs(`${Math.floor(totalBalls2nd / 6)}.${totalBalls2nd % 6}`);
+    setTimeout(() => {
+      setMatchCompleted(true);
+    }, 100);
   };
 
   // Uncomment if you want a separate "Reset Everything" button
@@ -1322,9 +1319,15 @@ function App() {
   };
 
   const getBallDisplay = (ball: Ball) => {
-    if (ball.type === 'W') return 'W';
-    if (ball.type === 'WD') return `${ball.runs}WD`;
-    if (ball.type === 'NB') return `${ball.runs}NB`;
+    if (ball.type === 'W') return ball.runs > 0 ? `${ball.runs}W` : 'W';
+    if (ball.type === 'WD') {
+      const extra = ball.runs - 1;
+      return extra > 0 ? `WD+${extra}` : 'WD';
+    }
+    if (ball.type === 'NB') {
+      const extra = ball.runs - 1;
+      return extra > 0 ? `NB+${extra}` : 'NB';
+    }
     return ball.runs.toString();
   };
 
@@ -1722,7 +1725,8 @@ function App() {
 
               <BallTypeButtons
                 onBallClick={addBall}
-                onWicket={addWicket}
+                onWicket={handleWicketButtonClick}
+                onRunOutWithRuns={handleRunOutWithRuns}
                 getTextColor={getTextColor}
                 getTextColorLight={getTextColorLight}
                 getGlassColor={getGlassColor}
@@ -1736,6 +1740,7 @@ function App() {
                 onResetMatch={resetMatch}
                 onStartSecondInnings={startSecondInnings}
                 onResetFullMatch={resetFullMatch}
+                onEndMatch={endMatch}
                 getTextColor={getTextColor}
               />
 
@@ -1792,6 +1797,49 @@ function App() {
           milestone={milestone.milestone}
           type={milestone.type}
           onClose={() => setMilestone(null)}
+        />
+      )}
+
+      {/* Wicket Modal */}
+      {wicketModalOpen && (
+        <WicketModal
+          fieldingPlayers={wicketModalFieldingPlayers}
+          batsmanName={wicketModalBatsmanName}
+          onConfirm={processWicket}
+          forceDismissal={wicketModalForceDismissal}
+          onCancel={() => {
+            setWicketModalOpen(false);
+            setPendingWicketContext(null);
+          }}
+          getTextColor={getTextColor}
+          getGlassColor={getGlassColor}
+          getBorderColor={getBorderColor}
+        />
+      )}
+
+      {/* Team Setup Modal (striker / non-striker / bowler) */}
+      {teamSetupModal && (
+        <TeamSetupModal
+          battingPlayers={getBattingTeamPlayers()}
+          bowlingPlayers={getBowlingTeamPlayers()}
+          dismissedBatsmen={dismissedBatsmen}
+          initialStriker={currentBatsman}
+          initialNonStriker={nonStriker}
+          initialBowler={currentBowler}
+          fields={teamSetupModal.fields}
+          onConfirm={(s, ns, b) => {
+            if (teamSetupModal.fields.includes('striker')) setCurrentBatsman(s);
+            if (teamSetupModal.fields.includes('nonStriker')) setNonStriker(ns);
+            if (teamSetupModal.fields.includes('bowler')) setCurrentBowler(b);
+            setTeamSetupModal(null);
+          }}
+          onCancel={() => {
+            setTeamSetupModal(null);
+            setPendingBallAfterSelect(null);
+          }}
+          getTextColor={getTextColor}
+          getGlassColor={getGlassColor}
+          getBorderColor={getBorderColor}
         />
       )}
     </div>

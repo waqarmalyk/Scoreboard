@@ -11,3 +11,7 @@ export { PreviousOvers } from './PreviousOvers';
 export { Statistics } from './Statistics';
 export { PlayerSetup } from './PlayerSetup';
 export { MilestonePopup } from './MilestonePopup';
+export { WicketModal } from './WicketModal';
+export { ExtraModal } from './ExtraModal';
+export { PlayerSelectModal } from './PlayerSelectModal';
+export { TeamSetupModal } from './TeamSetupModal';
