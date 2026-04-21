@@ -1117,16 +1117,30 @@ function App() {
       return;
     }
 
-    // New batsman comes on strike — open setup modal
+    // New batsman comes on strike — open setup modal only if someone is available
+    const newDismissed =
+      onStrikeWas === 'striker'
+        ? [...dismissedBatsmen, currentBatsman]
+        : [...dismissedBatsmen, nonStriker];
+
+    const allBatters = getBattingTeamPlayers();
+    const currentNonStriker =
+      onStrikeWas === 'striker' ? nonStriker : currentBatsman;
+    const stillAvailable = allBatters.filter(
+      (p) => !newDismissed.includes(p) && p !== currentNonStriker,
+    );
+
+    const needsNewBatsman = stillAvailable.length > 0;
+    const batsmanField: 'striker' | 'nonStriker' =
+      onStrikeWas === 'striker' ? 'striker' : 'nonStriker';
+
     if (onStrikeWas === 'striker') {
-      setDismissedBatsmen((prev) => [...prev, currentBatsman]);
+      setDismissedBatsmen(newDismissed);
       setCurrentBatsman('');
-      setTeamSetupModal({ fields: ['striker'] });
     } else {
-      setDismissedBatsmen((prev) => [...prev, nonStriker]);
+      setDismissedBatsmen(newDismissed);
       setNonStriker('');
       setOnStrike('non-striker');
-      setTeamSetupModal({ fields: ['nonStriker'] });
     }
 
     // Track total balls
@@ -1141,12 +1155,20 @@ function App() {
       (b) => b.type !== 'WD' && b.type !== 'NB',
     );
     if (legalBalls.length === 6) {
+      // Over ends + wicket: combine batsman & bowler into one modal so neither gets overwritten
       setTimeout(() => {
         setAllOvers([...allOvers, updatedOver]);
         setCurrentOver([]);
         setOnStrike(onStrikeWas === 'striker' ? 'non-striker' : 'striker');
-        setTeamSetupModal({ fields: ['bowler'] });
+        if (needsNewBatsman) {
+          setTeamSetupModal({ fields: [batsmanField, 'bowler'] });
+        } else {
+          setTeamSetupModal({ fields: ['bowler'] });
+        }
       }, 500);
+    } else if (needsNewBatsman) {
+      // Mid-over wicket: only need a new batsman
+      setTeamSetupModal({ fields: [batsmanField] });
     }
   };
 
@@ -1540,6 +1562,9 @@ function App() {
 
   const runsRequired = target - totalRuns;
   const ballsRemaining = targetMode ? Math.max(0, maxBalls - totalBalls) : 0;
+  const battingTeamSize =
+    innings === 2 ? team2Players.length : team1Players.length;
+  const wicketsLeft = Math.max(0, battingTeamSize - 1 - wickets);
   const runRate =
     (innings === 1 ? firstInningsBalls : totalBalls) > 0
       ? (
@@ -1665,6 +1690,7 @@ function App() {
                 target={target}
                 runsRequired={runsRequired}
                 ballsRemaining={ballsRemaining}
+                wicketsLeft={wicketsLeft}
                 runRate={runRate}
                 requiredRunRate={requiredRunRate}
                 matchOvers={matchOvers}

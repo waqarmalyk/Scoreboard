@@ -7,6 +7,7 @@ interface ScoreDisplayProps {
   target: number;
   runsRequired: number;
   ballsRemaining: number;
+  wicketsLeft: number;
   runRate: string;
   requiredRunRate: string;
   matchOvers: number;
@@ -26,6 +27,7 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   target,
   runsRequired,
   ballsRemaining,
+  wicketsLeft,
   runRate,
   requiredRunRate,
   matchOvers,
@@ -70,7 +72,7 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
         <span className='text-2xl font-semibold'>{oversDisplay}</span>
       </div>
       {targetMode && (
-        <div className='grid grid-cols-2 md:grid-cols-5 gap-3'>
+        <div className='grid grid-cols-3 md:grid-cols-6 gap-3'>
           <div
             className={`${getGlassColor()} rounded-lg p-3 border ${getBorderColor()}`}
           >
@@ -99,6 +101,16 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
             </span>
             <span className={`${getTextColor()} font-bold text-lg`}>
               {ballsRemaining}
+            </span>
+          </div>
+          <div
+            className={`${getGlassColor()} rounded-lg p-3 border ${getBorderColor()}`}
+          >
+            <span className={`${getTextColorLight()} text-sm block mb-1`}>
+              Wkts Left:
+            </span>
+            <span className={`${getTextColor()} font-bold text-lg`}>
+              {wicketsLeft}
             </span>
           </div>
           <div
