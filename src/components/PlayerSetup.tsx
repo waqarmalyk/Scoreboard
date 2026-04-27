@@ -1,3 +1,5 @@
+import { useState, useEffect } from 'react';
+
 // Predefined list of players
 const PREDEFINED_PLAYERS = [
   'Atir',
@@ -103,12 +105,23 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
   getBorderColor,
   getPlaceholderColor,
 }) => {
+  const [showThirdTeam, setShowThirdTeam] = useState(false);
+
+  // When third team is hidden, always reset to T1 vs T2
+  useEffect(() => {
+    if (!showThirdTeam) {
+      onMatchTeamAChange(1);
+      onMatchTeamBChange(2);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showThirdTeam]);
+
   // Filter out players already in any of the three teams
   const availablePlayers = PREDEFINED_PLAYERS.filter(
     (player) =>
       !team1Players.includes(player) &&
       !team2Players.includes(player) &&
-      !team3Players.includes(player),
+      (!showThirdTeam || !team3Players.includes(player)),
   );
 
   // Used for display labels / buttons — shows fallback when empty
@@ -132,16 +145,19 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
   };
 
   // All possible match-up combos
-  const matchups: Array<{ a: 1 | 2 | 3; b: 1 | 2 | 3 }> = [
+  const allMatchups: Array<{ a: 1 | 2 | 3; b: 1 | 2 | 3 }> = [
     { a: 1, b: 2 },
     { a: 1, b: 3 },
     { a: 2, b: 3 },
   ];
+  const matchups = showThirdTeam
+    ? allMatchups
+    : allMatchups.filter(({ a, b }) => a !== 3 && b !== 3);
 
   const renderTeamCard = (teamNum: 1 | 2 | 3) => {
     const players = getTeamPlayers(teamNum);
     const otherTeams = ([1, 2, 3] as (1 | 2 | 3)[]).filter(
-      (t) => t !== teamNum,
+      (t) => t !== teamNum && (showThirdTeam || t !== 3),
     );
     const onChangeName =
       teamNum === 1
@@ -252,9 +268,31 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
           >
             🏏 Match Setup
           </h1>
-          <p className={`text-xl ${getTextColorLight()}`}>
+          <p className={`text-xl ${getTextColorLight()} mb-4`}>
             Configure teams and start the match
           </p>
+          {/* 3rd team toggle */}
+          <button
+            onClick={() => setShowThirdTeam((prev) => !prev)}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border font-semibold text-sm transition-all duration-200 ${
+              showThirdTeam
+                ? 'bg-orange-500/60 border-orange-300/70 text-white'
+                : `${getGlassColor()} border-white/20 ${getTextColor()} hover:bg-white/10`
+            }`}
+          >
+            <span
+              className={`w-9 h-5 rounded-full relative transition-colors duration-200 flex-shrink-0 ${
+                showThirdTeam ? 'bg-orange-400' : 'bg-white/20'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${
+                  showThirdTeam ? 'left-4' : 'left-0.5'
+                }`}
+              />
+            </span>
+            Enable 3rd Team
+          </button>
         </div>
 
         {/* Predefined Players List */}
@@ -292,13 +330,15 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
                       >
                         T2
                       </button>
-                      <button
-                        onClick={() => onAddPlayerByName(3, player)}
-                        className='flex-1 bg-orange-500/50 hover:bg-orange-500/70 rounded px-1 py-1 text-white text-xs font-semibold transition-all'
-                        title={`Add to ${team3Name || 'Team 3'}`}
-                      >
-                        T3
-                      </button>
+                      {showThirdTeam && (
+                        <button
+                          onClick={() => onAddPlayerByName(3, player)}
+                          className='flex-1 bg-orange-500/50 hover:bg-orange-500/70 rounded px-1 py-1 text-white text-xs font-semibold transition-all'
+                          title={`Add to ${team3Name || 'Team 3'}`}
+                        >
+                          T3
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -307,49 +347,53 @@ export const PlayerSetup: React.FC<PlayerSetupProps> = ({
           </div>
         )}
 
-        {/* All Three Team Cards */}
-        <div className='grid grid-cols-1 md:grid-cols-3 gap-6 mb-6'>
+        {/* Team Cards */}
+        <div
+          className={`grid grid-cols-1 gap-6 mb-6 ${showThirdTeam ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}
+        >
           {renderTeamCard(1)}
           {renderTeamCard(2)}
-          {renderTeamCard(3)}
+          {showThirdTeam && renderTeamCard(3)}
         </div>
 
-        {/* Match Selection — which 2 of 3 teams are playing */}
-        <div className='mb-6'>
-          <div
-            className={`${getGlassColor()} backdrop-blur-md rounded-xl border ${getBorderColor()} p-6`}
-          >
-            <label className={`${getTextColorLight()} text-sm block mb-3`}>
-              Which two teams are playing today?
-            </label>
-            <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
-              {matchups.map(({ a, b }) => {
-                const isSelected = matchTeamA === a && matchTeamB === b;
-                return (
-                  <button
-                    key={`${a}-${b}`}
-                    onClick={() => {
-                      onMatchTeamAChange(a);
-                      onMatchTeamBChange(b);
-                      onTossWinnerChange(null);
-                    }}
-                    className={`${
-                      isSelected
-                        ? 'bg-green-500/60 border-green-300/70 scale-105'
-                        : 'bg-purple-500/40 border-purple-300/50 hover:bg-purple-500/50'
-                    } backdrop-blur-md border rounded-lg px-4 py-3 ${getTextColor()} font-semibold transition-all duration-200 hover:scale-105 text-center`}
-                  >
-                    <span className='text-sm'>
-                      {getTeamName(a)}{' '}
-                      <span className={getTextColorLight()}>vs</span>{' '}
-                      {getTeamName(b)}
-                    </span>
-                  </button>
-                );
-              })}
+        {/* Match Selection — only shown when 3rd team is enabled */}
+        {showThirdTeam && (
+          <div className='mb-6'>
+            <div
+              className={`${getGlassColor()} backdrop-blur-md rounded-xl border ${getBorderColor()} p-6`}
+            >
+              <label className={`${getTextColorLight()} text-sm block mb-3`}>
+                Which two teams are playing today?
+              </label>
+              <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
+                {matchups.map(({ a, b }) => {
+                  const isSelected = matchTeamA === a && matchTeamB === b;
+                  return (
+                    <button
+                      key={`${a}-${b}`}
+                      onClick={() => {
+                        onMatchTeamAChange(a);
+                        onMatchTeamBChange(b);
+                        onTossWinnerChange(null);
+                      }}
+                      className={`${
+                        isSelected
+                          ? 'bg-green-500/60 border-green-300/70 scale-105'
+                          : 'bg-purple-500/40 border-purple-300/50 hover:bg-purple-500/50'
+                      } backdrop-blur-md border rounded-lg px-4 py-3 ${getTextColor()} font-semibold transition-all duration-200 hover:scale-105 text-center`}
+                    >
+                      <span className='text-sm'>
+                        {getTeamName(a)}{' '}
+                        <span className={getTextColorLight()}>vs</span>{' '}
+                        {getTeamName(b)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Toss Configuration — only shows the two selected playing teams */}
         <div className='mb-6'>
